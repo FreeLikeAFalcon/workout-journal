@@ -40,6 +40,15 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
       }))
     : [];
 
+  const formatXAxis = (dateStr: string) => {
+    // Extract just the day and month from the date string
+    const parts = dateStr.split(',')[0].split('.');
+    if (parts.length >= 2) {
+      return `${parts[0]}.${parts[1]}.`;
+    }
+    return dateStr;
+  };
+
   return (
     <div className="glass-card rounded-xl p-6 w-full h-[400px] animate-slide-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -87,11 +96,13 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
             <XAxis 
               dataKey="date" 
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => value.split(',')[0]}
+              tickFormatter={formatXAxis}
+              interval="preserveStartEnd"
             />
             <YAxis 
               tick={{ fontSize: 12 }} 
-              domain={[(dataMin: number) => Math.max(0, dataMin * 0.8), (dataMax: number) => dataMax * 1.2]}
+              domain={[0, 500]} // Set max to 500kg as requested
+              tickFormatter={(value: number) => `${value} kg`}
             />
             <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
             <Tooltip 

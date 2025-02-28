@@ -8,10 +8,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen pb-16">
-      <div className="container max-w-6xl px-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 pb-20">
         <Navbar />
-        <main>{children}</main>
+        <main className="pb-12">{children}</main>
+        <footer className="text-center text-sm text-muted-foreground mt-16 pb-8">
+          <p>© {new Date().getFullYear()} KraftTracker • Deine Fitnessreise, visualisiert</p>
+        </footer>
       </div>
     </div>
   );
