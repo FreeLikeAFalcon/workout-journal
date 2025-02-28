@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { ChartData } from "@/types/workout";
-import { formatDate } from "@/utils/workoutUtils";
+import { formatDate, lbsToKg } from "@/utils/workoutUtils";
 
 interface ProgressChartProps {
   chartData: ChartData;
@@ -33,15 +33,15 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
   const data = selectedExercise
     ? chartData[selectedExercise]?.map((item) => ({
         date: formatDate(item.date),
-        maxWeight: item.maxWeight,
-        volumeLoad: Math.round(item.volumeLoad),
+        maxWeight: lbsToKg(item.maxWeight),
+        volumeLoad: lbsToKg(item.volumeLoad),
       }))
     : [];
 
   return (
     <div className="glass-card rounded-xl p-6 w-full h-[400px] animate-slide-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h3 className="text-lg font-semibold">Progress Tracker</h3>
+        <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
         
         <div className="flex gap-2 flex-wrap">
           {exercises.map((exercise) => (
@@ -86,6 +86,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
                 borderRadius: "var(--radius)",
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
               }}
+              formatter={(value: number) => [`${value.toFixed(1)} kg`, "Max. Gewicht"]}
             />
             <Area
               type="monotone"
@@ -94,15 +95,15 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
               fillOpacity={1}
               fill="url(#colorWeight)"
               strokeWidth={2}
-              name="Max Weight (lbs)"
+              name="Max. Gewicht (kg)"
             />
           </AreaChart>
         </ResponsiveContainer>
       ) : (
         <div className="h-[80%] flex items-center justify-center text-muted-foreground">
           {exercises.length > 0
-            ? "Not enough data to show progress for this exercise."
-            : "Add workouts to see your progress."}
+            ? "Nicht genug Daten, um Fortschritte für diese Übung anzuzeigen."
+            : "Füge Workouts hinzu, um deinen Fortschritt zu sehen."}
         </div>
       )}
     </div>

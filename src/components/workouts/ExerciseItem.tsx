@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Exercise, Set } from "@/types/workout";
-import { calculateExerciseVolume, generateId } from "@/utils/workoutUtils";
+import { calculateExerciseVolume, generateId, lbsToKg } from "@/utils/workoutUtils";
 import { Trash, Plus, ChevronDown, ChevronUp, Activity } from "lucide-react";
 import { useWorkout } from "@/contexts/WorkoutContext";
 
@@ -53,7 +53,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
         
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground hidden sm:block">
-            Total Volume: <span className="font-medium">{totalVolume} lbs</span>
+            Gesamtvolumen: <span className="font-medium">{lbsToKg(totalVolume).toFixed(1)} kg</span>
           </div>
           
           <button 
@@ -76,10 +76,10 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
             <table className="w-full">
               <thead>
                 <tr className="text-left text-sm text-muted-foreground">
-                  <th className="pb-2 font-medium">Set</th>
-                  <th className="pb-2 font-medium">Reps</th>
-                  <th className="pb-2 font-medium">Weight (lbs)</th>
-                  <th className="pb-2 font-medium">Volume</th>
+                  <th className="pb-2 font-medium">Satz</th>
+                  <th className="pb-2 font-medium">Wdh</th>
+                  <th className="pb-2 font-medium">Gewicht (kg)</th>
+                  <th className="pb-2 font-medium">Volumen</th>
                   <th className="pb-2 font-medium"></th>
                 </tr>
               </thead>
@@ -105,7 +105,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                         min="0"
                       />
                     </td>
-                    <td className="py-2 text-sm">{set.reps * set.weight} lbs</td>
+                    <td className="py-2 text-sm">{lbsToKg(set.reps * set.weight).toFixed(1)} kg</td>
                     <td className="py-2 text-right">
                       <button
                         onClick={() => removeSetFromExercise(workoutId, exercise.id, set.id)}
@@ -126,7 +126,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                       value={newSet.reps || ''}
                       onChange={(e) => setNewSet({ ...newSet, reps: parseInt(e.target.value) || 0 })}
                       className="w-16 p-1 border border-input rounded bg-transparent"
-                      placeholder="Reps"
+                      placeholder="Wdh"
                       min="0"
                     />
                   </td>
@@ -136,11 +136,11 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                       value={newSet.weight || ''}
                       onChange={(e) => setNewSet({ ...newSet, weight: parseInt(e.target.value) || 0 })}
                       className="w-20 p-1 border border-input rounded bg-transparent"
-                      placeholder="Weight"
+                      placeholder="Gewicht"
                       min="0"
                     />
                   </td>
-                  <td className="py-2 text-sm">{(newSet.reps || 0) * (newSet.weight || 0)} lbs</td>
+                  <td className="py-2 text-sm">{lbsToKg((newSet.reps || 0) * (newSet.weight || 0)).toFixed(1)} kg</td>
                   <td className="py-2 text-right">
                     <button
                       onClick={handleAddSet}

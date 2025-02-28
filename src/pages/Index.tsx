@@ -20,22 +20,22 @@ const Index: React.FC = () => {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Total Workouts"
+            title="Workouts Gesamt"
             value={stats.totalWorkouts}
             icon={<Calendar size={20} />}
           />
           <StatCard
-            title="Total Exercises"
+            title="Übungen Gesamt"
             value={stats.totalExercises}
             icon={<Dumbbell size={20} />}
           />
           <StatCard
-            title="Total Sets"
+            title="Sätze Gesamt"
             value={stats.totalSets}
             icon={<Activity size={20} />}
           />
           <StatCard
-            title="Most Frequent"
+            title="Häufigste Übung"
             value={stats.mostFrequentExercise.name}
             icon={<Target size={20} />}
           />
@@ -49,7 +49,7 @@ const Index: React.FC = () => {
         
         {/* Workout History */}
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Workout History</h2>
+          <h2 className="text-2xl font-semibold mb-4">Workout-Verlauf</h2>
           <WorkoutList />
         </div>
       </div>

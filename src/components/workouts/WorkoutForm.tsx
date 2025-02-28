@@ -97,12 +97,12 @@ const WorkoutForm: React.FC = () => {
           className="glass-card flex items-center justify-center w-full p-4 gap-2 rounded-xl text-primary font-medium hover:shadow-md transition-all"
         >
           <Plus size={18} />
-          Log New Workout
+          Neues Workout erfassen
         </button>
       ) : (
         <div className="glass-card rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Log New Workout</h2>
+            <h2 className="text-xl font-semibold">Neues Workout erfassen</h2>
             <button
               onClick={toggleForm}
               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -114,7 +114,7 @@ const WorkoutForm: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div>
-                <label className="block text-sm text-muted-foreground mb-1">Date</label>
+                <label className="block text-sm text-muted-foreground mb-1">Datum</label>
                 <input
                   type="date"
                   value={workoutDate}
@@ -125,13 +125,13 @@ const WorkoutForm: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm text-muted-foreground mb-1">Program</label>
+                <label className="block text-sm text-muted-foreground mb-1">Programm</label>
                 <input
                   type="text"
                   value={program}
                   onChange={(e) => setProgram(e.target.value)}
                   className="w-full p-2 border border-input rounded-lg bg-transparent"
-                  placeholder="Program Name"
+                  placeholder="Name des Programms"
                   required
                 />
               </div>
@@ -143,21 +143,21 @@ const WorkoutForm: React.FC = () => {
                   value={phase}
                   onChange={(e) => setPhase(e.target.value)}
                   className="w-full p-2 border border-input rounded-lg bg-transparent"
-                  placeholder="Program Phase"
+                  placeholder="Programmphase"
                   required
                 />
               </div>
             </div>
             
             <div className="mb-6">
-              <label className="block text-sm text-muted-foreground mb-1">Exercises</label>
+              <label className="block text-sm text-muted-foreground mb-1">Übungen</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={newExerciseName}
                   onChange={(e) => setNewExerciseName(e.target.value)}
                   className="flex-1 p-2 border border-input rounded-lg bg-transparent"
-                  placeholder="Exercise Name"
+                  placeholder="Name der Übung"
                 />
                 <button
                   type="button"
@@ -182,7 +182,7 @@ const WorkoutForm: React.FC = () => {
               </div>
             ) : (
               <div className="text-center text-muted-foreground my-10">
-                Add exercises to your workout
+                Füge Übungen zu deinem Workout hinzu
               </div>
             )}
             
@@ -193,7 +193,7 @@ const WorkoutForm: React.FC = () => {
                 disabled={!exercises.length || !exercises.some(ex => ex.sets.length > 0)}
               >
                 <Save size={16} />
-                Save Workout
+                Workout speichern
               </button>
             </div>
           </form>

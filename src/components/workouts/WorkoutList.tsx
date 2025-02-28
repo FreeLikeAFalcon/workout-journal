@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Workout } from "@/types/workout";
-import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord } from "@/utils/workoutUtils";
+import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord, lbsToKg } from "@/utils/workoutUtils";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Calendar, ChevronDown, ChevronUp, Dumbbell, Trash } from "lucide-react";
 import ExerciseItem from "./ExerciseItem";
@@ -26,7 +26,7 @@ const WorkoutList: React.FC = () => {
   const groupedWorkouts: Record<string, Workout[]> = {};
   sortedWorkouts.forEach(workout => {
     const date = new Date(workout.date);
-    const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const monthYear = date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
     
     if (!groupedWorkouts[monthYear]) {
       groupedWorkouts[monthYear] = [];
@@ -39,9 +39,9 @@ const WorkoutList: React.FC = () => {
     return (
       <div className="glass-card rounded-xl p-8 text-center animate-fade-in">
         <Dumbbell size={40} className="mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">No Workouts Yet</h3>
+        <h3 className="text-lg font-medium mb-2">Noch keine Workouts</h3>
         <p className="text-muted-foreground">
-          Start logging your workouts to track your progress.
+          Beginne mit dem Tracking deiner Workouts, um deinen Fortschritt zu verfolgen.
         </p>
       </div>
     );
@@ -73,7 +73,7 @@ const WorkoutList: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      {workout.exercises.length} exercises • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} sets • {calculateWorkoutVolume(workout).toLocaleString()} lbs total volume
+                      {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {lbsToKg(calculateWorkoutVolume(workout)).toFixed(1)} kg Gesamtvolumen
                     </div>
                   </div>
                   

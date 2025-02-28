@@ -38,15 +38,31 @@ export const getMaxWeight = (exercise: Exercise): number => {
 };
 
 /**
- * Formats a date string to a more readable format
+ * Formats a date string to a more readable format (German)
  */
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(dateString).toLocaleDateString('de-DE', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
+};
+
+/**
+ * Convert lbs to kg
+ */
+export const lbsToKg = (weight: number): number => {
+  // Conversion factor: 1 lb = 0.453592 kg
+  return parseFloat((weight * 0.453592).toFixed(1));
+};
+
+/**
+ * Convert kg to lbs (for data storage)
+ */
+export const kgToLbs = (weight: number): number => {
+  // Conversion factor: 1 kg = 2.20462 lbs
+  return parseFloat((weight * 2.20462).toFixed(1));
 };
 
 /**
@@ -59,7 +75,7 @@ export const calculateWorkoutStats = (workouts: Workout[]): WorkoutStats => {
       totalExercises: 0,
       totalSets: 0,
       mostFrequentExercise: {
-        name: 'None',
+        name: 'Keine',
         count: 0
       }
     };
@@ -84,7 +100,7 @@ export const calculateWorkoutStats = (workouts: Workout[]): WorkoutStats => {
     });
   });
 
-  let mostFrequentExercise = { name: 'None', count: 0 };
+  let mostFrequentExercise = { name: 'Keine', count: 0 };
   
   Object.entries(exerciseCounts).forEach(([name, count]) => {
     if (count > mostFrequentExercise.count) {
@@ -148,7 +164,7 @@ export const createSampleWorkouts = (): Workout[] => {
       exercises: [
         {
           id: generateId(),
-          name: "Bench Press",
+          name: "Bankdrücken",
           sets: [
             { id: generateId(), reps: 8, weight: 135 },
             { id: generateId(), reps: 8, weight: 145 },
@@ -157,7 +173,7 @@ export const createSampleWorkouts = (): Workout[] => {
         },
         {
           id: generateId(),
-          name: "Squat",
+          name: "Kniebeuge",
           sets: [
             { id: generateId(), reps: 8, weight: 185 },
             { id: generateId(), reps: 8, weight: 205 },
@@ -174,7 +190,7 @@ export const createSampleWorkouts = (): Workout[] => {
       exercises: [
         {
           id: generateId(),
-          name: "Bench Press",
+          name: "Bankdrücken",
           sets: [
             { id: generateId(), reps: 8, weight: 145 },
             { id: generateId(), reps: 6, weight: 155 },
@@ -183,7 +199,7 @@ export const createSampleWorkouts = (): Workout[] => {
         },
         {
           id: generateId(),
-          name: "Pull-up",
+          name: "Klimmzug",
           sets: [
             { id: generateId(), reps: 8, weight: 0 },
             { id: generateId(), reps: 8, weight: 0 },
@@ -200,7 +216,7 @@ export const createSampleWorkouts = (): Workout[] => {
       exercises: [
         {
           id: generateId(),
-          name: "Squat",
+          name: "Kniebeuge",
           sets: [
             { id: generateId(), reps: 8, weight: 205 },
             { id: generateId(), reps: 8, weight: 225 },
@@ -209,7 +225,7 @@ export const createSampleWorkouts = (): Workout[] => {
         },
         {
           id: generateId(),
-          name: "Deadlift",
+          name: "Kreuzheben",
           sets: [
             { id: generateId(), reps: 5, weight: 225 },
             { id: generateId(), reps: 5, weight: 245 },
