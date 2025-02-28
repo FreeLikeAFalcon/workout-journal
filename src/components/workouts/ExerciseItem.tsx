@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Exercise, Set } from "@/types/workout";
 import { calculateExerciseVolume, generateId, lbsToKg } from "@/utils/workoutUtils";
@@ -15,6 +14,9 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
   const [isExpanded, setIsExpanded] = useState(true);
   const [newSet, setNewSet] = useState<Omit<Set, "id">>({ reps: 0, weight: 0 });
   const { removeExerciseFromWorkout, addSetToExercise, removeSetFromExercise, updateSet } = useWorkout();
+
+  const maxWeightSet = isPersonalRecord ? 
+    [...exercise.sets].sort((a, b) => b.weight - a.weight)[0] : null;
 
   const handleAddSet = () => {
     if (newSet.reps > 0) {
@@ -84,40 +86,44 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                 </tr>
               </thead>
               <tbody>
-                {exercise.sets.map((set, index) => (
-                  <tr key={set.id} className="border-t border-border/30">
-                    <td className="py-2 text-sm">{index + 1}</td>
-                    <td className="py-2">
-                      <input
-                        type="number"
-                        value={set.reps}
-                        onChange={(e) => handleUpdateSet(set.id, "reps", parseInt(e.target.value) || 0)}
-                        className="w-16 p-1 border border-input rounded bg-transparent"
-                        min="0"
-                      />
-                    </td>
-                    <td className="py-2">
-                      <input
-                        type="number"
-                        value={set.weight}
-                        onChange={(e) => handleUpdateSet(set.id, "weight", parseInt(e.target.value) || 0)}
-                        className="w-20 p-1 border border-input rounded bg-transparent"
-                        min="0"
-                      />
-                    </td>
-                    <td className="py-2 text-sm">{lbsToKg(set.reps * set.weight).toFixed(1)} kg</td>
-                    <td className="py-2 text-right">
-                      <button
-                        onClick={() => removeSetFromExercise(workoutId, exercise.id, set.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {exercise.sets.map((set, index) => {
+                  const isPRSet = maxWeightSet && set.id === maxWeightSet.id;
+                  return (
+                    <tr key={set.id} className={`border-t border-border/30 ${isPRSet ? "bg-accent/5" : ""}`}>
+                      <td className="py-2 text-sm">{index + 1}</td>
+                      <td className="py-2">
+                        <input
+                          type="number"
+                          value={set.reps}
+                          onChange={(e) => handleUpdateSet(set.id, "reps", parseInt(e.target.value) || 0)}
+                          className={`w-16 p-1 border border-input rounded bg-transparent ${isPRSet ? "font-bold text-accent" : ""}`}
+                          min="0"
+                        />
+                      </td>
+                      <td className="py-2">
+                        <input
+                          type="number"
+                          value={set.weight}
+                          onChange={(e) => handleUpdateSet(set.id, "weight", parseInt(e.target.value) || 0)}
+                          className={`w-20 p-1 border border-input rounded bg-transparent ${isPRSet ? "font-bold text-accent" : ""}`}
+                          min="0"
+                        />
+                      </td>
+                      <td className={`py-2 text-sm ${isPRSet ? "font-bold text-accent" : ""}`}>
+                        {lbsToKg(set.reps * set.weight).toFixed(1)} kg
+                      </td>
+                      <td className="py-2 text-right">
+                        <button
+                          onClick={() => removeSetFromExercise(workoutId, exercise.id, set.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 
-                {/* Add new set row */}
                 <tr className="border-t border-border/30">
                   <td className="py-2 text-sm">{exercise.sets.length + 1}</td>
                   <td className="py-2">

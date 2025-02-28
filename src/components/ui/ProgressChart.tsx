@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { ChartData } from "@/types/workout";
 import { formatDate, lbsToKg } from "@/utils/workoutUtils";
+import { ChevronDown } from "lucide-react";
 
 interface ProgressChartProps {
   chartData: ChartData;
@@ -18,6 +19,7 @@ interface ProgressChartProps {
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Get list of available exercises
   const exercises = Object.keys(chartData);
@@ -43,20 +45,33 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
         
-        <div className="flex gap-2 flex-wrap">
-          {exercises.map((exercise) => (
-            <button
-              key={exercise}
-              onClick={() => setSelectedExercise(exercise)}
-              className={`px-3 py-1.5 text-sm rounded-full transition-all ${
-                selectedExercise === exercise
-                  ? "bg-primary text-white"
-                  : "bg-secondary hover:bg-secondary/80"
-              }`}
-            >
-              {exercise}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+          >
+            <span>{selectedExercise || "Übung auswählen"}</span>
+            <ChevronDown size={16} className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+          </button>
+          
+          {isDropdownOpen && (
+            <div className="absolute z-30 top-full right-0 mt-1 bg-background border border-border rounded-lg shadow-lg w-64 max-h-64 overflow-y-auto">
+              {exercises.map((exercise) => (
+                <button
+                  key={exercise}
+                  onClick={() => {
+                    setSelectedExercise(exercise);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors ${
+                    selectedExercise === exercise ? "bg-secondary" : ""
+                  }`}
+                >
+                  {exercise}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

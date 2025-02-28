@@ -31,7 +31,7 @@ const WorkoutForm: React.FC = () => {
     setExercises(exercises.filter((exercise) => exercise.id !== id));
   };
 
-  const handleAddSet = (exerciseId: string, reps: number, weight: number) => {
+  const handleAddSet = (exerciseId: string, set: Omit<Set, "id">) => {
     setExercises(
       exercises.map((exercise) => {
         if (exercise.id === exerciseId) {
@@ -39,7 +39,7 @@ const WorkoutForm: React.FC = () => {
             ...exercise,
             sets: [
               ...exercise.sets,
-              { id: generateId(), reps, weight },
+              { id: generateId(), ...set },
             ],
           };
         }
@@ -55,6 +55,25 @@ const WorkoutForm: React.FC = () => {
           return {
             ...exercise,
             sets: exercise.sets.filter((set) => set.id !== setId),
+          };
+        }
+        return exercise;
+      })
+    );
+  };
+
+  const handleUpdateSet = (exerciseId: string, setId: string, field: string, value: number) => {
+    setExercises(
+      exercises.map((exercise) => {
+        if (exercise.id === exerciseId) {
+          return {
+            ...exercise,
+            sets: exercise.sets.map((set) => {
+              if (set.id === setId) {
+                return { ...set, [field]: value };
+              }
+              return set;
+            }),
           };
         }
         return exercise;
