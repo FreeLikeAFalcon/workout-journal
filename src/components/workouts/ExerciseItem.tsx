@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Exercise, Set } from "@/types/workout";
+import { Exercise, Set as WorkoutSet } from "@/types/workout";
 import { calculateExerciseVolume, generateId, lbsToKg } from "@/utils/workoutUtils";
 import { Trash, Plus, ChevronDown, ChevronUp, Activity } from "lucide-react";
 import { useWorkout } from "@/contexts/WorkoutContext";
@@ -12,7 +12,7 @@ interface ExerciseItemProps {
 
 const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPersonalRecord = false }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [newSet, setNewSet] = useState<Omit<Set, "id">>({ reps: 0, weight: 0 });
+  const [newSet, setNewSet] = useState<Omit<WorkoutSet, "id">>({ reps: 0, weight: 0 });
   const { removeExerciseFromWorkout, addSetToExercise, removeSetFromExercise, updateSet } = useWorkout();
 
   const maxWeightSet = isPersonalRecord ? 
@@ -25,7 +25,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
     }
   };
 
-  const handleUpdateSet = (setId: string, field: keyof Set, value: number) => {
+  const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number) => {
     const setToUpdate = exercise.sets.find(s => s.id === setId);
     if (setToUpdate) {
       updateSet(workoutId, exercise.id, {

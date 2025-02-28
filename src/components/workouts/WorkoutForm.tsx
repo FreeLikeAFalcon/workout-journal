@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Exercise, Workout } from "@/types/workout";
+import { Exercise, Workout, Set as WorkoutSet } from "@/types/workout";
 import { generateId } from "@/utils/workoutUtils";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Plus, Save, X } from "lucide-react";
@@ -31,7 +31,7 @@ const WorkoutForm: React.FC = () => {
     setExercises(exercises.filter((exercise) => exercise.id !== id));
   };
 
-  const handleAddSet = (exerciseId: string, set: Omit<Set, "id">) => {
+  const handleAddSet = (exerciseId: string, set: Omit<WorkoutSet, "id">) => {
     setExercises(
       exercises.map((exercise) => {
         if (exercise.id === exerciseId) {
