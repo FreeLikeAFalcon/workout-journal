@@ -15,7 +15,7 @@ const Welcome: React.FC = () => {
   // If user is already logged in, redirect to home page
   React.useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 

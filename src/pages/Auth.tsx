@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Dumbbell, Mail, Lock, User } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "@/hooks/use-toast";
 
 const Auth: React.FC = () => {
   const { signIn, signUp, user, loading } = useAuth();
@@ -39,6 +41,11 @@ const Auth: React.FC = () => {
     e.preventDefault();
     
     if (!email || !password) {
+      toast({
+        title: t('error'),
+        description: t('please.fill.all.fields') || "Please fill all fields",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -56,15 +63,41 @@ const Auth: React.FC = () => {
     e.preventDefault();
     
     if (!email || !password || !username) {
+      toast({
+        title: t('error'),
+        description: t('please.fill.all.fields') || "Please fill all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: t('error'),
+        description: t('password.too.short') || "Password must be at least 6 characters",
+        variant: "destructive",
+      });
       return;
     }
     
     try {
       setFormLoading(true);
       await signUp(email, password, username);
-      setActiveTab("login");
-    } catch (error) {
+      toast({
+        title: t('success'),
+        description: t('registration.successful') || "Registration successful",
+      });
+      setEmail("");
+      setPassword("");
+      setUsername("");
+      // Don't automatically switch to login tab as we might need email verification
+    } catch (error: any) {
       console.error("Signup error:", error);
+      toast({
+        title: t('error'),
+        description: error?.message || t('registration.failed') || "Registration failed",
+        variant: "destructive",
+      });
     } finally {
       setFormLoading(false);
     }
@@ -195,6 +228,7 @@ const Auth: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10"
+                      minLength={6}
                       required
                     />
                   </div>
