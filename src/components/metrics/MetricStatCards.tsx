@@ -1,10 +1,14 @@
-
 import React from "react";
 import { useMetrics } from "@/contexts/MetricsContext";
 import StatCard from "@/components/ui/StatCard";
 import { Scale, Target, Ruler, Dumbbell } from "lucide-react";
+import { WidgetType } from "@/types/metrics";
 
-const MetricStatCards: React.FC = () => {
+interface MetricStatCardsProps {
+  widgetType?: WidgetType;
+}
+
+const MetricStatCards: React.FC<MetricStatCardsProps> = ({ widgetType }) => {
   const { metrics } = useMetrics();
 
   const getCurrentWeight = () => {
@@ -54,34 +58,79 @@ const MetricStatCards: React.FC = () => {
     return `${value}%`;
   };
 
-  return (
-    <>
-      <StatCard
-        title="Aktuelles Gewicht"
-        value={getCurrentWeight()}
-        icon={<Scale size={20} />}
-        className="bg-blue-50/50 hover:bg-blue-50/80"
-      />
-      <StatCard
-        title="Gewichtsziel"
-        value={getWeightGoal()}
-        icon={<Target size={20} />}
-        className="bg-purple-50/50 hover:bg-purple-50/80"
-      />
-      <StatCard
-        title="Körperfett"
-        value={getBodyFat()}
-        icon={<Ruler size={20} />}
-        className="bg-red-50/50 hover:bg-red-50/80"
-      />
-      <StatCard
-        title="Muskelmasse"
-        value={getMuscleMass()}
-        icon={<Dumbbell size={20} />}
-        className="bg-green-50/50 hover:bg-green-50/80"
-      />
-    </>
-  );
+  // If no specific widget type is requested, render all metrics (for backwards compatibility)
+  if (!widgetType) {
+    return (
+      <>
+        <StatCard
+          title="Aktuelles Gewicht"
+          value={getCurrentWeight()}
+          icon={<Scale size={20} />}
+          className="bg-blue-50/50 hover:bg-blue-50/80"
+        />
+        <StatCard
+          title="Gewichtsziel"
+          value={getWeightGoal()}
+          icon={<Target size={20} />}
+          className="bg-purple-50/50 hover:bg-purple-50/80"
+        />
+        <StatCard
+          title="Körperfett"
+          value={getBodyFat()}
+          icon={<Ruler size={20} />}
+          className="bg-red-50/50 hover:bg-red-50/80"
+        />
+        <StatCard
+          title="Muskelmasse"
+          value={getMuscleMass()}
+          icon={<Dumbbell size={20} />}
+          className="bg-green-50/50 hover:bg-green-50/80"
+        />
+      </>
+    );
+  }
+
+  // Otherwise, render just the requested metric type
+  switch (widgetType) {
+    case WidgetType.CURRENT_WEIGHT:
+      return (
+        <StatCard
+          title="Aktuelles Gewicht"
+          value={getCurrentWeight()}
+          icon={<Scale size={20} />}
+          className="bg-blue-50/50 hover:bg-blue-50/80"
+        />
+      );
+    case WidgetType.WEIGHT_GOAL:
+      return (
+        <StatCard
+          title="Gewichtsziel"
+          value={getWeightGoal()}
+          icon={<Target size={20} />}
+          className="bg-purple-50/50 hover:bg-purple-50/80"
+        />
+      );
+    case WidgetType.BODY_FAT:
+      return (
+        <StatCard
+          title="Körperfett"
+          value={getBodyFat()}
+          icon={<Ruler size={20} />}
+          className="bg-red-50/50 hover:bg-red-50/80"
+        />
+      );
+    case WidgetType.MUSCLE_MASS:
+      return (
+        <StatCard
+          title="Muskelmasse"
+          value={getMuscleMass()}
+          icon={<Dumbbell size={20} />}
+          className="bg-green-50/50 hover:bg-green-50/80"
+        />
+      );
+    default:
+      return null;
+  }
 };
 
 export default MetricStatCards;

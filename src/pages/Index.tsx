@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import WorkoutForm from "@/components/workouts/WorkoutForm";
@@ -67,7 +66,7 @@ const Index: React.FC = () => {
       case WidgetType.WEIGHT_GOAL:
       case WidgetType.BODY_FAT:
       case WidgetType.MUSCLE_MASS:
-        return <MetricStatCards />;
+        return <MetricStatCards widgetType={type} />;
       default:
         return null;
     }
