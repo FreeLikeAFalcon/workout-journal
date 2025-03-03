@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Area,
@@ -76,21 +75,20 @@ const MetricsChart: React.FC = () => {
     return dateStr;
   };
 
-  const data = getMetricEntries(activeMetric);
-  const goal = metrics[activeMetric].goal;
-
-  // Get Y-axis domain based on metric type
   const getYAxisDomain = () => {
     if (activeMetric === "weight") {
       return [0, 300] as [number, number]; // Max 300kg for weight, explicitly typed
+    } else if (activeMetric === "bodyFat") {
+      // For bodyFat, set fixed max to 50%
+      return [0, 50] as [number, number];
     } else {
-      // For bodyFat and muscleMass, calculate dynamic domains
-      return [
-        (dataMin: number) => Math.max(0, dataMin * 0.95),
-        (dataMax: number) => dataMax * 1.05
-      ] as [(dataMin: number) => number, (dataMax: number) => number];
+      // For muscleMass, set fixed max to 90%
+      return [0, 90] as [number, number];
     }
   };
+
+  const data = getMetricEntries(activeMetric);
+  const goal = metrics[activeMetric].goal;
 
   // Safely check if we have data to render
   const hasValidData = data.length > 0;
