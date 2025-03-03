@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeSwitcher from "./ThemeSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Navbar: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,10 +46,13 @@ const Navbar: React.FC = () => {
       
       <div className="flex items-center gap-4">
         <div className="text-sm text-muted-foreground hidden md:block">
-          Here begins your journey
+          {t('journey')}
         </div>
         
-        <LanguageSwitcher />
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
         
         {user ? (
           <DropdownMenu>
@@ -60,15 +66,15 @@ const Navbar: React.FC = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Mein Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                <span>Profil</span>
+                <span>{t('profile')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Abmelden</span>
+                <span>{t('signOut')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -78,7 +84,7 @@ const Navbar: React.FC = () => {
             size="sm" 
             onClick={() => navigate("/auth")}
           >
-            Anmelden
+            {t('signIn')}
           </Button>
         )}
       </div>

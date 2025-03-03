@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Check, Globe } from 'lucide-react';
 import {
   DropdownMenu,
@@ -7,20 +7,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type Language = 'de' | 'en';
+import { useLanguage, Language } from '@/contexts/LanguageContext';
 
 interface LanguageSwitcherProps {
   className?: string;
 }
 
 const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className }) => {
-  const [language, setLanguage] = useState<Language>('de');
+  const { language, setLanguage } = useLanguage();
   
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage);
-    // In a real application, you would use i18n here
-    // For example: i18n.changeLanguage(newLanguage);
     console.log(`Language changed to: ${newLanguage}`);
   };
 

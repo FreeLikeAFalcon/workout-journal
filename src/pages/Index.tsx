@@ -14,11 +14,13 @@ import MetricsChart from "@/components/metrics/MetricsChart";
 import MetricStatCards from "@/components/metrics/MetricStatCards";
 import WidgetCustomizer from "@/components/ui/WidgetCustomizer";
 import { WidgetType } from "@/types/metrics";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index: React.FC = () => {
   const { workouts } = useWorkout();
   const { widgets } = useMetrics();
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const { t } = useLanguage();
   
   const stats = calculateWorkoutStats(workouts);
   const chartData = prepareChartData(workouts);
@@ -34,7 +36,7 @@ const Index: React.FC = () => {
       case WidgetType.TOTAL_WORKOUTS:
         return (
           <StatCard
-            title="Workouts Gesamt"
+            title={t('workouts.total')}
             value={stats.totalWorkouts}
             icon={<Calendar size={20} />}
           />
@@ -42,7 +44,7 @@ const Index: React.FC = () => {
       case WidgetType.TOTAL_EXERCISES:
         return (
           <StatCard
-            title="Übungen Gesamt"
+            title={t('exercises.total')}
             value={stats.totalExercises}
             icon={<Dumbbell size={20} />}
           />
@@ -50,7 +52,7 @@ const Index: React.FC = () => {
       case WidgetType.TOTAL_SETS:
         return (
           <StatCard
-            title="Sätze Gesamt"
+            title={t('sets.total')}
             value={stats.totalSets}
             icon={<Activity size={20} />}
           />
@@ -58,7 +60,7 @@ const Index: React.FC = () => {
       case WidgetType.MOST_FREQUENT_EXERCISE:
         return (
           <StatCard
-            title="Häufigste Übung"
+            title={t('exercise.mostFrequent')}
             value={stats.mostFrequentExercise.name}
             icon={<Target size={20} />}
           />
@@ -81,7 +83,7 @@ const Index: React.FC = () => {
           <button 
             onClick={() => setIsCustomizing(true)}
             className="absolute -top-2 -right-2 bg-secondary hover:bg-secondary/80 p-2 rounded-full transition-all z-10"
-            title="Widgets anpassen"
+            title={t('widgets.customize')}
           >
             <Settings size={16} />
           </button>
@@ -95,8 +97,8 @@ const Index: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="flex justify-center p-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-              <p className="text-muted-foreground">Keine Widgets ausgewählt. Klicke auf das Zahnrad, um Widgets hinzuzufügen.</p>
+            <div className="flex justify-center p-6 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+              <p className="text-muted-foreground">{t('widgets.none')}</p>
             </div>
           )}
         </div>
@@ -115,7 +117,7 @@ const Index: React.FC = () => {
         
         {/* Workout History */}
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Workout-Verlauf</h2>
+          <h2 className="text-2xl font-semibold mb-4">{t('workoutHistory')}</h2>
           <WorkoutList />
         </div>
         

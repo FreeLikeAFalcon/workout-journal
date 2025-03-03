@@ -4,7 +4,7 @@ import { useMetrics } from "@/contexts/MetricsContext";
 import { WidgetConfig, WidgetType } from "@/types/metrics";
 import { GripVertical, LayoutGrid, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface WidgetCustomizerProps {
   onClose: () => void;
@@ -14,25 +14,26 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   const { widgets, updateWidgets } = useMetrics();
   const [localWidgets, setLocalWidgets] = useState<WidgetConfig[]>([...widgets]);
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const getWidgetName = (type: WidgetType): string => {
     switch (type) {
       case WidgetType.TOTAL_WORKOUTS:
-        return "Workouts Gesamt";
+        return t('workouts.total');
       case WidgetType.TOTAL_EXERCISES:
-        return "Übungen Gesamt";
+        return t('exercises.total');
       case WidgetType.TOTAL_SETS:
-        return "Sätze Gesamt";
+        return t('sets.total');
       case WidgetType.MOST_FREQUENT_EXERCISE:
-        return "Häufigste Übung";
+        return t('exercise.mostFrequent');
       case WidgetType.CURRENT_WEIGHT:
-        return "Aktuelles Gewicht";
+        return t('metrics.currentWeight');
       case WidgetType.WEIGHT_GOAL:
-        return "Gewichtsziel";
+        return t('metrics.weightGoal');
       case WidgetType.BODY_FAT:
-        return "Körperfettanteil";
+        return t('metrics.bodyFat');
       case WidgetType.MUSCLE_MASS:
-        return "Muskelmasse";
+        return t('metrics.muscleMass');
     }
   };
 
@@ -86,11 +87,11 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card rounded-xl max-w-md w-full p-6 animate-fade-in">
+      <div className="glass-card rounded-xl max-w-md w-full p-6 animate-fade-in dark:bg-gray-800 dark:border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <LayoutGrid size={20} />
-            Widgets anpassen
+            {t('widgets.customize')}
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
@@ -137,13 +138,13 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
             onClick={onClose}
             className="px-4 py-2 border border-input rounded-lg hover:bg-secondary/50 transition-colors"
           >
-            Abbrechen
+            {t('cancel')}
           </button>
           <button
             onClick={saveChanges}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Speichern
+            {t('save')}
           </button>
         </div>
       </div>
