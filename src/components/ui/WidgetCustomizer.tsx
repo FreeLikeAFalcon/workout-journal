@@ -4,6 +4,7 @@ import { useMetrics } from "@/contexts/MetricsContext";
 import { WidgetConfig, WidgetType } from "@/types/metrics";
 import { Check, GripVertical, LayoutGrid, X, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface WidgetCustomizerProps {
   onClose: () => void;
@@ -141,7 +142,14 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
                     <GripVertical size={16} className="text-muted-foreground" />
                     <span>{getWidgetName(widget.type)}</span>
                     {isStandardWidget(widget.type) && (
-                      <Lock size={12} className="text-muted-foreground" title="Immer sichtbar" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span><Lock size={12} className="text-muted-foreground" /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Immer sichtbar</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                   <button
