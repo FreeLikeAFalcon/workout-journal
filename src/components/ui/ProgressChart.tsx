@@ -11,8 +11,9 @@ import {
 } from "recharts";
 import { ChartData } from "@/types/workout";
 import { formatDate, lbsToKg } from "@/utils/workoutUtils";
-import { ChevronDown, ChevronRight, LineChart, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronRight, LineChart, TrendingUp, Minus, Plus } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 
 interface ProgressChartProps {
   chartData: ChartData;
@@ -59,17 +60,24 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
         className="w-full"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-2 p-1 rounded-md hover:bg-secondary/50 transition-colors">
-              {isCollapsed ? (
-                <ChevronRight size={18} className="text-muted-foreground" />
-              ) : (
-                <ChevronDown size={18} className="text-muted-foreground" />
-              )}
-              <TrendingUp size={20} className="text-accent" />
-              <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
-            </button>
-          </CollapsibleTrigger>
+          <div className="flex items-center gap-2">
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-secondary/50 transition-colors"
+                aria-label={isCollapsed ? "Expand chart" : "Collapse chart"}
+              >
+                {isCollapsed ? (
+                  <Plus size={18} className="text-muted-foreground" />
+                ) : (
+                  <Minus size={18} className="text-muted-foreground" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <TrendingUp size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
+          </div>
           
           <div className="relative">
             <button

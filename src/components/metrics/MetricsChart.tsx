@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Area,
@@ -11,10 +12,11 @@ import {
 } from "recharts";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { formatDate } from "@/utils/workoutUtils";
-import { ChevronDown, Scale, Dumbbell, Ruler, TrendingUp, ChevronRight } from "lucide-react";
+import { ChevronDown, Scale, Dumbbell, Ruler, TrendingUp, ChevronRight, Minus, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "@/components/ui/button";
 
 type MetricType = "weight" | "bodyFat" | "muscleMass";
 
@@ -102,16 +104,21 @@ const MetricsChart: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div className="flex items-center gap-2">
             <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 p-1 rounded-md hover:bg-secondary/50 transition-colors">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-secondary/50 transition-colors"
+                aria-label={isCollapsed ? "Expand chart" : "Collapse chart"}
+              >
                 {isCollapsed ? (
-                  <ChevronRight size={18} className="text-muted-foreground" />
+                  <Plus size={18} className="text-muted-foreground" />
                 ) : (
-                  <ChevronDown size={18} className="text-muted-foreground" />
+                  <Minus size={18} className="text-muted-foreground" />
                 )}
-                {getChartIcon()}
-                <h3 className="text-lg font-semibold">{getChartTitle()}</h3>
-              </button>
+              </Button>
             </CollapsibleTrigger>
+            {getChartIcon()}
+            <h3 className="text-lg font-semibold">{getChartTitle()}</h3>
           </div>
           
           <div className="relative">
