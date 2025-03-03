@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,7 +20,6 @@ const Auth: React.FC = () => {
   const [username, setUsername] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   
-  // Get the tab from URL query parameters
   const query = new URLSearchParams(location.search);
   const defaultTab = query.get("tab") === "register" ? "register" : "login";
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
@@ -33,7 +31,6 @@ const Auth: React.FC = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    // Update active tab when URL query changes
     const tabFromQuery = query.get("tab") === "register" ? "register" : "login";
     setActiveTab(tabFromQuery);
   }, [location.search]);
@@ -76,7 +73,7 @@ const Auth: React.FC = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="animate-pulse text-lg">{t('loading') || "Laden..."}</div>
+        <div className="animate-pulse text-lg">{t('loading')}</div>
       </div>
     );
   }
@@ -85,40 +82,40 @@ const Auth: React.FC = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 transition-colors duration-300">
       <div className="flex items-center gap-2 mb-8">
         <Dumbbell size={32} className="text-accent" />
-        <h1 className="font-display text-3xl font-semibold">KraftTracker</h1>
+        <h1 className="font-display text-3xl font-semibold">Wod-Tracker</h1>
       </div>
 
       <Card className="w-full max-w-md glass-card animate-fade-in">
         <CardHeader>
           <CardTitle className="text-center text-2xl">
             {activeTab === "login" ? 
-              (t('welcome.back') || "Willkommen zurück") : 
-              (t('create.account') || "Konto erstellen")}
+              t('welcome.back') : 
+              t('create.account')}
           </CardTitle>
           <CardDescription className="text-center">
             {activeTab === "login" ? 
-              (t('login.to.continue') || "Melde dich an, um fortzufahren") : 
-              (t('register.to.start') || "Registriere dich, um zu beginnen")}
+              t('login.to.continue') : 
+              t('register.to.start')}
           </CardDescription>
         </CardHeader>
         
         <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="login">{t('login') || "Anmelden"}</TabsTrigger>
-            <TabsTrigger value="register">{t('register') || "Registrieren"}</TabsTrigger>
+            <TabsTrigger value="login">{t('login')}</TabsTrigger>
+            <TabsTrigger value="register">{t('register')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="login">
             <form onSubmit={handleLogin}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t('email') || "E-Mail"}</Label>
+                  <Label htmlFor="email">{t('email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder={t('email.placeholder') || "deine@email.de"}
+                      placeholder={t('email.placeholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
@@ -128,7 +125,7 @@ const Auth: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password">{t('password') || "Passwort"}</Label>
+                  <Label htmlFor="password">{t('password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -156,13 +153,13 @@ const Auth: React.FC = () => {
             <form onSubmit={handleSignUp}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">{t('email') || "E-Mail"}</Label>
+                  <Label htmlFor="signup-email">{t('email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder={t('email.placeholder') || "deine@email.de"}
+                      placeholder={t('email.placeholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
@@ -172,13 +169,13 @@ const Auth: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="username">{t('username') || "Benutzername"}</Label>
+                  <Label htmlFor="username">{t('username')}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="username"
                       type="text"
-                      placeholder={t('username.placeholder') || "dein_benutzername"}
+                      placeholder={t('username.placeholder')}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       className="pl-10"
@@ -188,7 +185,7 @@ const Auth: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">{t('password') || "Passwort"}</Label>
+                  <Label htmlFor="signup-password">{t('password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input

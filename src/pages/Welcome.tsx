@@ -26,15 +26,15 @@ const Welcome: React.FC = () => {
       <div className="max-w-3xl w-full flex flex-col items-center z-10 animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
           <Dumbbell size={48} className="text-white" />
-          <h1 className="font-display text-5xl font-bold text-white">KraftTracker</h1>
+          <h1 className="font-display text-5xl font-bold text-white">Wod-Tracker</h1>
         </div>
         
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4">
-            {t('welcome.title') || "Verfolge deinen Fortschritt, erreiche deine Ziele"}
+            {t('welcome.title')}
           </h2>
           <p className="text-lg text-white/80 max-w-xl mx-auto">
-            {t('welcome.subtitle') || "Die einfachste Möglichkeit, deine Workouts zu protokollieren, deine Fortschritte zu verfolgen und deine Fitness zu steigern."}
+            {t('welcome.subtitle')}
           </p>
         </div>
 
@@ -44,7 +44,7 @@ const Welcome: React.FC = () => {
             size="lg" 
             className="flex-1 bg-white text-blue-600 hover:bg-white/90 text-lg py-6"
           >
-            <Link to="/auth?tab=login">{t('login') || "Anmelden"}</Link>
+            <Link to="/auth?tab=login">{t('login')}</Link>
           </Button>
           <Button 
             asChild 
@@ -52,13 +52,13 @@ const Welcome: React.FC = () => {
             variant="outline" 
             className="flex-1 border-white text-white hover:bg-white/10 text-lg py-6"
           >
-            <Link to="/auth?tab=register">{t('register') || "Registrieren"}</Link>
+            <Link to="/auth?tab=register">{t('register')}</Link>
           </Button>
         </div>
       </div>
 
       <footer className="absolute bottom-6 text-white/60 text-sm">
-        © {new Date().getFullYear()} KraftTracker • {t('journey') || "Deine Fitness-Reise beginnt hier"}
+        © {new Date().getFullYear()} Wod-Tracker • {t('journey')}
       </footer>
     </div>
   );
