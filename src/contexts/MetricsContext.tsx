@@ -225,7 +225,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .insert({
             user_id: user.id,
             metric_type: type,
-            value: value,
+            value: value.toString(), // Convert number to string
             date: newMetric.date,
           })
           .select()
@@ -294,7 +294,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           operation = supabase
             .from('body_goals')
             .update({
-              target: goal.target,
+              target: goal.target.toString(), // Convert number to string
               deadline: goal.deadline || null,
             })
             .eq('id', existingGoal.id);
@@ -305,7 +305,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
             .insert({
               user_id: user.id,
               metric_type: type,
-              target: goal.target,
+              target: goal.target.toString(), // Convert number to string
               deadline: goal.deadline || null,
             });
         }

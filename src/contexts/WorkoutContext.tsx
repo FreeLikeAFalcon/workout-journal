@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
@@ -25,29 +24,24 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const { user } = useAuth();
 
-  // Load workouts when user logs in
   useEffect(() => {
     if (user) {
       fetchWorkouts();
     } else {
-      // If no user is logged in, use localStorage as fallback
       const savedWorkouts = localStorage.getItem("workouts");
       if (savedWorkouts) {
         try {
           setWorkouts(JSON.parse(savedWorkouts));
         } catch (error) {
           console.error("Failed to parse workouts from localStorage:", error);
-          // If parsing fails, use sample data
           setWorkouts(createSampleWorkouts());
         }
       } else {
-        // Use sample data for first-time users
         setWorkouts(createSampleWorkouts());
       }
     }
   }, [user]);
 
-  // Save workouts to localStorage when not logged in
   useEffect(() => {
     if (!user && workouts.length > 0) {
       localStorage.setItem("workouts", JSON.stringify(workouts));
@@ -56,7 +50,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchWorkouts = async () => {
     try {
-      // Fetch workouts
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
@@ -69,7 +62,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       if (!workoutsData || workoutsData.length === 0) {
-        // If no workouts found, create sample workouts in database
         if (user) {
           const sampleWorkouts = createSampleWorkouts().map(workout => ({
             ...workout,
@@ -80,7 +72,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      // For each workout, fetch exercises
       const fullWorkouts = await Promise.all(workoutsData.map(async (workout) => {
         const { data: exercisesData, error: exercisesError } = await supabase
           .from('exercises')
@@ -98,7 +89,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           };
         }
 
-        // For each exercise, fetch sets
         const exercisesWithSets = await Promise.all(exercisesData.map(async (exercise) => {
           const { data: setsData, error: setsError } = await supabase
             .from('sets')
@@ -142,7 +132,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const saveWorkoutsToDatabase = async (workoutsToSave: any[]) => {
     try {
-      // Insert workouts
       const { data: insertedWorkouts, error: workoutsError } = await supabase
         .from('workouts')
         .insert(workoutsToSave.map(w => ({
@@ -158,7 +147,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      // Insert exercises for each workout
       for (let i = 0; i < insertedWorkouts.length; i++) {
         const workoutId = insertedWorkouts[i].id;
         const exercises = workoutsToSave[i].exercises;
@@ -177,7 +165,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             continue;
           }
 
-          // Insert sets for each exercise
           for (let j = 0; j < insertedExercises.length; j++) {
             const exerciseId = insertedExercises[j].id;
             const sets = exercises[j].sets;
@@ -188,7 +175,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 .insert(sets.map((s: any) => ({
                   exercise_id: exerciseId,
                   reps: s.reps,
-                  weight: s.weight
+                  weight: s.weight.toString()
                 })));
 
               if (setsError) {
@@ -199,7 +186,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
 
-      // Refresh workouts after saving
       fetchWorkouts();
     } catch (error) {
       console.error("Error in saveWorkoutsToDatabase:", error);
@@ -207,19 +193,15 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addWorkout = async (workout: Omit<Workout, "id">) => {
-    const newWorkoutId = generateId(); // Temporary ID for immediate UI update
-    
-    // Update local state for immediate UI feedback
+    const newWorkoutId = generateId();
     const newWorkout = {
       ...workout,
       id: newWorkoutId,
     };
     setWorkouts((prev) => [...prev, newWorkout]);
-    
-    // If user is logged in, save to database
+
     if (user) {
       try {
-        // Insert workout
         const { data: insertedWorkout, error: workoutError } = await supabase
           .from('workouts')
           .insert({
@@ -233,7 +215,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (workoutError) {
           console.error("Error adding workout:", workoutError);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           toast({
             title: "Workout not added",
             description: "There was an error saving your workout.",
@@ -244,7 +226,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         const workoutId = insertedWorkout.id;
 
-        // Insert exercises
         for (const exercise of workout.exercises) {
           const { data: insertedExercise, error: exerciseError } = await supabase
             .from('exercises')
@@ -260,7 +241,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             continue;
           }
 
-          // Insert sets
           if (exercise.sets.length > 0) {
             const { error: setsError } = await supabase
               .from('sets')
@@ -276,13 +256,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Refresh workouts to get the correct database IDs
         fetchWorkouts();
       } catch (error) {
         console.error("Error in addWorkout:", error);
       }
     }
-    
+
     toast({
       title: "Workout added",
       description: `Your workout for ${new Date(workout.date).toLocaleDateString()} has been saved.`,
@@ -290,10 +269,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteWorkout = async (id: string) => {
-    // Update local state first
     setWorkouts((prev) => prev.filter((workout) => workout.id !== id));
-    
-    // If user is logged in, delete from database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -303,7 +280,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error deleting workout:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           toast({
             title: "Error",
             description: "Failed to delete workout.",
@@ -315,7 +292,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.error("Error in deleteWorkout:", error);
       }
     }
-    
+
     toast({
       title: "Workout deleted",
       description: "Your workout has been removed.",
@@ -323,15 +300,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateWorkout = async (workout: Workout) => {
-    // Update local state first
     setWorkouts((prev) =>
       prev.map((w) => (w.id === workout.id ? workout : w))
     );
-    
-    // If user is logged in, update in database
+
     if (user) {
       try {
-        // Update workout
         const { error: workoutError } = await supabase
           .from('workouts')
           .update({
@@ -343,18 +317,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (workoutError) {
           console.error("Error updating workout:", workoutError);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
-
-        // This is a simplified approach. For a complete solution,
-        // you would need to handle adding/updating/removing exercises and sets
-        // by comparing with the current state in the database.
       } catch (error) {
         console.error("Error in updateWorkout:", error);
       }
     }
-    
+
     toast({
       title: "Workout updated",
       description: "Your changes have been saved.",
@@ -363,8 +333,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const clearAllWorkouts = async () => {
     setWorkouts([]);
-    
-    // If user is logged in, delete all from database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -374,7 +343,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error clearing workouts:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           toast({
             title: "Error",
             description: "Failed to clear workouts.",
@@ -386,7 +355,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.error("Error in clearAllWorkouts:", error);
       }
     }
-    
+
     toast({
       title: "All workouts cleared",
       description: "Your workout history has been reset.",
@@ -394,14 +363,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addExerciseToWorkout = async (workoutId: string, exercise: Omit<Exercise, "id">) => {
-    const newExerciseId = generateId(); // Temporary ID
-    
-    // Update local state first
+    const newExerciseId = generateId();
     const newExercise = {
       ...exercise,
       id: newExerciseId,
     };
-    
+
     setWorkouts((prev) =>
       prev.map((workout) => {
         if (workout.id === workoutId) {
@@ -413,8 +380,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return workout;
       })
     );
-    
-    // If user is logged in, save to database
+
     if (user) {
       try {
         const { data, error } = await supabase
@@ -428,11 +394,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error adding exercise:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
 
-        // If there are sets, add them too
         if (exercise.sets.length > 0) {
           const { error: setsError } = await supabase
             .from('sets')
@@ -447,7 +412,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Refresh to get correct database IDs
         fetchWorkouts();
       } catch (error) {
         console.error("Error in addExerciseToWorkout:", error);
@@ -456,7 +420,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const removeExerciseFromWorkout = async (workoutId: string, exerciseId: string) => {
-    // Update local state first
     setWorkouts((prev) =>
       prev.map((workout) => {
         if (workout.id === workoutId) {
@@ -468,8 +431,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return workout;
       })
     );
-    
-    // If user is logged in, delete from database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -479,7 +441,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error removing exercise:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
       } catch (error) {
@@ -489,14 +451,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addSetToExercise = async (workoutId: string, exerciseId: string, set: Omit<Set, "id">) => {
-    const newSetId = generateId(); // Temporary ID
-    
-    // Update local state first
+    const newSetId = generateId();
     const newSet = {
       ...set,
       id: newSetId,
     };
-    
+
     setWorkouts((prev) =>
       prev.map((workout) => {
         if (workout.id === workoutId) {
@@ -516,8 +476,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return workout;
       })
     );
-    
-    // If user is logged in, save to database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -530,7 +489,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error adding set:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
       } catch (error) {
@@ -540,7 +499,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const removeSetFromExercise = async (workoutId: string, exerciseId: string, setId: string) => {
-    // Update local state first
     setWorkouts((prev) =>
       prev.map((workout) => {
         if (workout.id === workoutId) {
@@ -560,8 +518,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return workout;
       })
     );
-    
-    // If user is logged in, delete from database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -571,7 +528,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error removing set:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
       } catch (error) {
@@ -581,7 +538,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateSet = async (workoutId: string, exerciseId: string, set: Set) => {
-    // Update local state first
     setWorkouts((prev) =>
       prev.map((workout) => {
         if (workout.id === workoutId) {
@@ -601,8 +557,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return workout;
       })
     );
-    
-    // If user is logged in, update in database
+
     if (user) {
       try {
         const { error } = await supabase
@@ -615,7 +570,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error updating set:", error);
-          fetchWorkouts(); // Revert to database state
+          fetchWorkouts();
           return;
         }
       } catch (error) {
