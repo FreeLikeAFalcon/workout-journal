@@ -86,13 +86,19 @@ const Index: React.FC = () => {
             <Settings size={16} />
           </button>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {visibleWidgets.map(widget => (
-              <React.Fragment key={widget.id}>
-                {renderWidget(widget.type)}
-              </React.Fragment>
-            ))}
-          </div>
+          {visibleWidgets.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {visibleWidgets.map(widget => (
+                <div key={widget.id}>
+                  {renderWidget(widget.type)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center p-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+              <p className="text-muted-foreground">Keine Widgets ausgewählt. Klicke auf das Zahnrad, um Widgets hinzuzufügen.</p>
+            </div>
+          )}
         </div>
         
         {/* Body Metrics Chart */}
