@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { WidgetConfig, WidgetType } from "@/types/metrics";
-import { Check, DragVertical, LayoutGrid, X } from "lucide-react";
+import { Check, GripVertical, LayoutGrid, X } from "lucide-react";
 
 interface WidgetCustomizerProps {
   onClose: () => void;
@@ -110,7 +110,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
                 } cursor-move`}
               >
                 <div className="flex items-center gap-3">
-                  <DragVertical size={16} className="text-muted-foreground" />
+                  <GripVertical size={16} className="text-muted-foreground" />
                   <span>{getWidgetName(widget.type)}</span>
                 </div>
                 <button
