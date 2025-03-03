@@ -23,10 +23,13 @@ const MetricsChart: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const getMetricEntries = (type: MetricType) => {
-    return metrics[type].entries.map(entry => ({
-      date: formatDate(entry.date),
-      value: entry.value
-    }));
+    // Filter out any entries with NaN values before returning
+    return metrics[type].entries
+      .filter(entry => !isNaN(entry.value))
+      .map(entry => ({
+        date: formatDate(entry.date),
+        value: entry.value
+      }));
   };
 
   const getChartTitle = () => {
@@ -82,13 +85,15 @@ const MetricsChart: React.FC = () => {
       return [0, 300] as [number, number]; // Max 300kg for weight, explicitly typed
     } else {
       // For bodyFat and muscleMass, calculate dynamic domains
-      // Convert to proper function format that recharts expects
       return [
-        (dataMin: number, dataMax: number) => Math.max(0, dataMin * 0.95),
-        (dataMin: number, dataMax: number) => dataMax * 1.05
-      ] as [(dataMin: number, dataMax: number) => number, (dataMin: number, dataMax: number) => number];
+        (dataMin: number) => Math.max(0, dataMin * 0.95),
+        (dataMax: number) => dataMax * 1.05
+      ] as [(dataMin: number) => number, (dataMax: number) => number];
     }
   };
+
+  // Safely check if we have data to render
+  const hasValidData = data.length > 0;
 
   return (
     <div className="glass-card rounded-xl p-6 w-full h-[400px] animate-slide-up mb-8">
@@ -152,9 +157,12 @@ const MetricsChart: React.FC = () => {
         </div>
       </div>
 
-      {data.length > 0 ? (
+      {hasValidData ? (
         <ResponsiveContainer width="100%" height="80%">
-          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <AreaChart 
+            data={data} 
+            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          >
             <defs>
               <linearGradient id={`color${activeMetric}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={getMetricColor()} stopOpacity={0.8} />
@@ -180,7 +188,11 @@ const MetricsChart: React.FC = () => {
                 borderRadius: "var(--radius)",
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
               }}
-              formatter={(value: number) => [`${value} ${getUnit()}`, activeMetric === "weight" ? "Gewicht" : activeMetric === "bodyFat" ? "Körperfett" : "Muskelmasse"]}
+              formatter={(value: number) => {
+                // Prevent NaN values from being displayed
+                if (isNaN(value)) return ["Ungültiger Wert", ""];
+                return [`${value} ${getUnit()}`, activeMetric === "weight" ? "Gewicht" : activeMetric === "bodyFat" ? "Körperfett" : "Muskelmasse"]; 
+              }}
             />
             <Area
               type="monotone"
@@ -193,7 +205,7 @@ const MetricsChart: React.FC = () => {
             />
             
             {/* Target Line for Goal */}
-            {goal && (
+            {goal && goal.target && !isNaN(goal.target) && (
               <ReferenceLine 
                 y={goal.target} 
                 stroke={getMetricColor()} 
