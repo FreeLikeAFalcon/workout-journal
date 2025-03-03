@@ -4,10 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
 
+interface Profile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: Profile | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -19,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,9 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
         .single();
 
       if (error) {
@@ -69,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setProfile(data);
+      setProfile(data as Profile);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
     }
