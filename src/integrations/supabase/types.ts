@@ -9,6 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      body_goals: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          id: string
+          metric_type: string
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          metric_type: string
+          target: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          metric_type?: string
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      body_metrics: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          metric_type: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          metric_type: string
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          metric_type?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -30,6 +122,101 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      sets: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          reps: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          reps: number
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          reps?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      widget_configs: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          type: string
+          updated_at: string
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position: number
+          type: string
+          updated_at?: string
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          phase: string
+          program: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          phase: string
+          program: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          phase?: string
+          program?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

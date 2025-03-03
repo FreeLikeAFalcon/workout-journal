@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { BodyMetric, BodyGoal, BodyMetrics, WidgetConfig, WidgetType } from "@/types/metrics";
 import { generateId } from "@/utils/workoutUtils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MetricsContextType {
   metrics: BodyMetrics;
@@ -44,47 +46,167 @@ const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [metrics, setMetrics] = useState<BodyMetrics>(defaultMetrics);
   const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgets);
+  const { user } = useAuth();
 
-  // Load metrics and widget config from localStorage on initial load
+  // Load metrics and widget config when user logs in
   useEffect(() => {
-    const savedMetrics = localStorage.getItem("bodyMetrics");
-    const savedWidgets = localStorage.getItem("widgets");
-    
-    if (savedMetrics) {
-      try {
-        setMetrics(JSON.parse(savedMetrics));
-      } catch (error) {
-        console.error("Failed to parse body metrics from localStorage:", error);
-        setMetrics(defaultMetrics);
+    if (user) {
+      fetchMetrics();
+      fetchWidgets();
+    } else {
+      // If no user is logged in, use localStorage as fallback
+      const savedMetrics = localStorage.getItem("bodyMetrics");
+      const savedWidgets = localStorage.getItem("widgets");
+      
+      if (savedMetrics) {
+        try {
+          setMetrics(JSON.parse(savedMetrics));
+        } catch (error) {
+          console.error("Failed to parse body metrics from localStorage:", error);
+          setMetrics(defaultMetrics);
+        }
+      }
+      
+      if (savedWidgets) {
+        try {
+          setWidgets(JSON.parse(savedWidgets));
+        } catch (error) {
+          console.error("Failed to parse widgets from localStorage:", error);
+          setWidgets(defaultWidgets);
+        }
       }
     }
-    
-    if (savedWidgets) {
-      try {
-        setWidgets(JSON.parse(savedWidgets));
-      } catch (error) {
-        console.error("Failed to parse widgets from localStorage:", error);
-        setWidgets(defaultWidgets);
-      }
+  }, [user]);
+
+  // Save metrics and widgets to localStorage as fallback when not logged in
+  useEffect(() => {
+    if (!user) {
+      localStorage.setItem("bodyMetrics", JSON.stringify(metrics));
+      localStorage.setItem("widgets", JSON.stringify(widgets));
     }
-  }, []);
+  }, [metrics, widgets, user]);
 
-  // Save metrics and widgets to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("bodyMetrics", JSON.stringify(metrics));
-  }, [metrics]);
-  
-  useEffect(() => {
-    localStorage.setItem("widgets", JSON.stringify(widgets));
-  }, [widgets]);
+  const fetchMetrics = async () => {
+    try {
+      // Fetch metrics
+      const { data: metricsData, error: metricsError } = await supabase
+        .from('body_metrics')
+        .select('*')
+        .eq('user_id', user?.id);
 
-  const addMetric = (type: keyof BodyMetrics, value: number) => {
+      if (metricsError) {
+        console.error("Error fetching metrics:", metricsError);
+        return;
+      }
+
+      // Fetch goals
+      const { data: goalsData, error: goalsError } = await supabase
+        .from('body_goals')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      if (goalsError) {
+        console.error("Error fetching goals:", goalsError);
+        return;
+      }
+
+      // Convert database data to application format
+      const newMetrics = { ...defaultMetrics };
+
+      metricsData?.forEach(metric => {
+        const metricType = metric.metric_type as keyof BodyMetrics;
+        newMetrics[metricType].entries.push({
+          id: metric.id,
+          date: metric.date,
+          value: parseFloat(metric.value),
+        });
+      });
+
+      // Sort entries by date
+      for (const key in newMetrics) {
+        const metricType = key as keyof BodyMetrics;
+        newMetrics[metricType].entries.sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      }
+
+      // Add goals
+      goalsData?.forEach(goal => {
+        const metricType = goal.metric_type as keyof BodyMetrics;
+        newMetrics[metricType].goal = {
+          target: parseFloat(goal.target),
+          deadline: goal.deadline || undefined,
+        };
+      });
+
+      setMetrics(newMetrics);
+    } catch (error) {
+      console.error("Error in fetchMetrics:", error);
+    }
+  };
+
+  const fetchWidgets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('widget_configs')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      if (error) {
+        console.error("Error fetching widgets:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const widgetConfigs = data.map(widget => ({
+          id: widget.id,
+          type: widget.type as WidgetType,
+          position: widget.position,
+          visible: widget.visible,
+        }));
+        setWidgets(widgetConfigs);
+      } else {
+        // If no widgets found in database, create defaults
+        saveDefaultWidgetsToDatabase();
+      }
+    } catch (error) {
+      console.error("Error in fetchWidgets:", error);
+    }
+  };
+
+  const saveDefaultWidgetsToDatabase = async () => {
+    if (!user) return;
+
+    try {
+      const widgetsToInsert = defaultWidgets.map(widget => ({
+        user_id: user.id,
+        type: widget.type,
+        position: widget.position,
+        visible: widget.visible,
+      }));
+
+      const { error } = await supabase
+        .from('widget_configs')
+        .insert(widgetsToInsert);
+
+      if (error) {
+        console.error("Error saving default widgets:", error);
+      } else {
+        fetchWidgets(); // Fetch newly created widgets with their database IDs
+      }
+    } catch (error) {
+      console.error("Error in saveDefaultWidgetsToDatabase:", error);
+    }
+  };
+
+  const addMetric = async (type: keyof BodyMetrics, value: number) => {
     const newMetric: BodyMetric = {
-      id: generateId(),
+      id: generateId(), // Temporary ID
       date: new Date().toISOString(),
       value,
     };
     
+    // Update local state first for immediate UI feedback
     setMetrics(prev => ({
       ...prev,
       [type]: {
@@ -95,13 +217,57 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }));
     
+    // If user is logged in, save to database
+    if (user) {
+      try {
+        const { data, error } = await supabase
+          .from('body_metrics')
+          .insert({
+            user_id: user.id,
+            metric_type: type,
+            value: value,
+            date: newMetric.date,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error adding metric:", error);
+          // Revert state change if save fails
+          fetchMetrics();
+          toast({
+            title: "Fehler",
+            description: "Metrik konnte nicht gespeichert werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Update with the real database ID
+        if (data) {
+          setMetrics(prev => ({
+            ...prev,
+            [type]: {
+              ...prev[type],
+              entries: prev[type].entries.map(entry => 
+                entry.date === newMetric.date ? { ...entry, id: data.id } : entry
+              ),
+            }
+          }));
+        }
+      } catch (error) {
+        console.error("Error in addMetric:", error);
+      }
+    }
+    
     toast({
       title: "Metrik gespeichert",
       description: `Neue ${type} Messung wurde gespeichert.`,
     });
   };
 
-  const setGoal = (type: keyof BodyMetrics, goal: BodyGoal) => {
+  const setGoal = async (type: keyof BodyMetrics, goal: BodyGoal) => {
+    // Update local state first
     setMetrics(prev => ({
       ...prev,
       [type]: {
@@ -110,13 +276,66 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }));
     
+    // If user is logged in, save to database
+    if (user) {
+      try {
+        // Check if a goal already exists for this metric type
+        const { data: existingGoal } = await supabase
+          .from('body_goals')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('metric_type', type)
+          .single();
+
+        let operation;
+        
+        if (existingGoal) {
+          // Update existing goal
+          operation = supabase
+            .from('body_goals')
+            .update({
+              target: goal.target,
+              deadline: goal.deadline || null,
+            })
+            .eq('id', existingGoal.id);
+        } else {
+          // Insert new goal
+          operation = supabase
+            .from('body_goals')
+            .insert({
+              user_id: user.id,
+              metric_type: type,
+              target: goal.target,
+              deadline: goal.deadline || null,
+            });
+        }
+
+        const { error } = await operation;
+
+        if (error) {
+          console.error("Error setting goal:", error);
+          // Revert state change if save fails
+          fetchMetrics();
+          toast({
+            title: "Fehler",
+            description: "Ziel konnte nicht gespeichert werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error in setGoal:", error);
+      }
+    }
+    
     toast({
       title: "Ziel gesetzt",
       description: `Neues ${type} Ziel wurde gesetzt.`,
     });
   };
 
-  const deleteMetric = (type: keyof BodyMetrics, id: string) => {
+  const deleteMetric = async (type: keyof BodyMetrics, id: string) => {
+    // Update local state first
     setMetrics(prev => ({
       ...prev,
       [type]: {
@@ -125,14 +344,81 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }));
     
+    // If user is logged in, delete from database
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('body_metrics')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error("Error deleting metric:", error);
+          // Revert state change if delete fails
+          fetchMetrics();
+          toast({
+            title: "Fehler",
+            description: "Metrik konnte nicht gelöscht werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error in deleteMetric:", error);
+      }
+    }
+    
     toast({
       title: "Metrik gelöscht",
       description: `${type} Messung wurde gelöscht.`,
     });
   };
 
-  const updateWidgets = (newWidgets: WidgetConfig[]) => {
+  const updateWidgets = async (newWidgets: WidgetConfig[]) => {
+    // Update local state first
     setWidgets(newWidgets);
+    
+    // If user is logged in, update in database
+    if (user) {
+      try {
+        // Delete all existing widgets for this user
+        const { error: deleteError } = await supabase
+          .from('widget_configs')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (deleteError) {
+          console.error("Error deleting widgets:", deleteError);
+          return;
+        }
+
+        // Insert new widget configurations
+        const widgetsToInsert = newWidgets.map(widget => ({
+          user_id: user.id,
+          type: widget.type,
+          position: widget.position,
+          visible: widget.visible,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('widget_configs')
+          .insert(widgetsToInsert);
+
+        if (insertError) {
+          console.error("Error updating widgets:", insertError);
+          // Revert state change if save fails
+          fetchWidgets();
+          toast({
+            title: "Fehler",
+            description: "Widget-Einstellungen konnten nicht gespeichert werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error in updateWidgets:", error);
+      }
+    }
     
     toast({
       title: "Widgets aktualisiert",
