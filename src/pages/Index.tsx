@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import WorkoutForm from "@/components/workouts/WorkoutForm";
@@ -24,7 +25,14 @@ const Index: React.FC = () => {
   
   // Get visible widgets sorted by position
   const visibleWidgets = widgets
-    .filter(widget => widget.visible)
+    .filter(widget => 
+      // Always show these three default widgets
+      widget.type === WidgetType.TOTAL_WORKOUTS || 
+      widget.type === WidgetType.TOTAL_SETS || 
+      widget.type === WidgetType.MOST_FREQUENT_EXERCISE || 
+      // For other widgets, respect their visibility setting
+      widget.visible
+    )
     .sort((a, b) => a.position - b.position);
   
   // Render a specific widget based on its type
