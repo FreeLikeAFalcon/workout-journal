@@ -24,13 +24,14 @@ const Welcome: React.FC = () => {
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTZWMGg2djMwem0wIDBoMTh2NmgtMTh2LTZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-10"></div>
       
-      {/* Man image as background */}
-      <div className="absolute right-0 bottom-0 h-full max-h-[800px] opacity-70 hidden md:block">
+      {/* Man image as full background */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
         <img 
           src="/lovable-uploads/6b3c7d11-dfa9-4b2a-a3b6-beb83f1dea16.png" 
           alt="Athletic man" 
-          className="h-full object-contain"
+          className="object-cover object-center w-full h-full opacity-30 md:opacity-40"
         />
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-600/80 to-blue-400/80 dark:from-blue-950/90 dark:to-blue-800/90 mix-blend-multiply"></div>
       </div>
 
       <div className="max-w-3xl w-full flex flex-col items-center z-10 animate-fade-in">
@@ -40,7 +41,7 @@ const Welcome: React.FC = () => {
         </div>
         
         <div className="text-center mb-12 relative">
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm -m-4 rounded-xl -z-10"></div>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm -m-4 rounded-xl -z-10"></div>
           <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4 drop-shadow-md">
             {t('welcome.title')}
           </h2>
