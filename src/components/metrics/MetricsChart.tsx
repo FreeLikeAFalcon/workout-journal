@@ -4,7 +4,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -80,13 +79,14 @@ const MetricsChart: React.FC = () => {
   // Get Y-axis domain based on metric type
   const getYAxisDomain = () => {
     if (activeMetric === "weight") {
-      return [0, 300]; // Max 300kg for weight
+      return [0, 300] as [number, number]; // Max 300kg for weight, explicitly typed
     } else {
       // For bodyFat and muscleMass, calculate dynamic domains
+      // Convert to proper function format that recharts expects
       return [
-        (dataMin: number) => Math.max(0, dataMin * 0.95),
-        (dataMax: number) => dataMax * 1.05
-      ];
+        (dataMin: number, dataMax: number) => Math.max(0, dataMin * 0.95),
+        (dataMin: number, dataMax: number) => dataMax * 1.05
+      ] as [(dataMin: number, dataMax: number) => number, (dataMin: number, dataMax: number) => number];
     }
   };
 
