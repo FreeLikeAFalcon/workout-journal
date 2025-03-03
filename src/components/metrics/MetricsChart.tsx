@@ -4,6 +4,8 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,7 +13,8 @@ import {
 } from "recharts";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { formatDate } from "@/utils/workoutUtils";
-import { ChevronDown, Scale, Dumbbell, Ruler } from "lucide-react";
+import { ChevronDown, Scale, Dumbbell, Ruler, Target } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type MetricType = "weight" | "bodyFat" | "muscleMass";
 
@@ -72,6 +75,20 @@ const MetricsChart: React.FC = () => {
   };
 
   const data = getMetricEntries(activeMetric);
+  const goal = metrics[activeMetric].goal;
+
+  // Get Y-axis domain based on metric type
+  const getYAxisDomain = () => {
+    if (activeMetric === "weight") {
+      return [0, 300]; // Max 300kg for weight
+    } else {
+      // For bodyFat and muscleMass, calculate dynamic domains
+      return [
+        (dataMin: number) => Math.max(0, dataMin * 0.95),
+        (dataMax: number) => dataMax * 1.05
+      ];
+    }
+  };
 
   return (
     <div className="glass-card rounded-xl p-6 w-full h-[400px] animate-slide-up mb-8">
@@ -92,42 +109,44 @@ const MetricsChart: React.FC = () => {
           
           {isDropdownOpen && (
             <div className="absolute z-30 top-full right-0 mt-1 bg-background border border-border rounded-lg shadow-lg w-48">
-              <button
-                onClick={() => {
-                  setActiveMetric("weight");
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
-                  activeMetric === "weight" ? "bg-secondary" : ""
-                }`}
-              >
-                <Scale size={16} />
-                <span>Gewicht</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveMetric("bodyFat");
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
-                  activeMetric === "bodyFat" ? "bg-secondary" : ""
-                }`}
-              >
-                <Ruler size={16} />
-                <span>Körperfett</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveMetric("muscleMass");
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
-                  activeMetric === "muscleMass" ? "bg-secondary" : ""
-                }`}
-              >
-                <Dumbbell size={16} />
-                <span>Muskelmasse</span>
-              </button>
+              <ScrollArea className="max-h-48">
+                <button
+                  onClick={() => {
+                    setActiveMetric("weight");
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
+                    activeMetric === "weight" ? "bg-secondary" : ""
+                  }`}
+                >
+                  <Scale size={16} />
+                  <span>Gewicht</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveMetric("bodyFat");
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
+                    activeMetric === "bodyFat" ? "bg-secondary" : ""
+                  }`}
+                >
+                  <Ruler size={16} />
+                  <span>Körperfett</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveMetric("muscleMass");
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors flex items-center gap-2 ${
+                    activeMetric === "muscleMass" ? "bg-secondary" : ""
+                  }`}
+                >
+                  <Dumbbell size={16} />
+                  <span>Muskelmasse</span>
+                </button>
+              </ScrollArea>
             </div>
           )}
         </div>
@@ -150,10 +169,7 @@ const MetricsChart: React.FC = () => {
             />
             <YAxis 
               tick={{ fontSize: 12 }}
-              domain={[
-                (dataMin: number) => Math.max(0, dataMin * 0.95),
-                (dataMax: number) => dataMax * 1.05
-              ]}
+              domain={getYAxisDomain()}
               tickFormatter={(value: number) => `${value}${getUnit()}`}
             />
             <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
@@ -175,6 +191,22 @@ const MetricsChart: React.FC = () => {
               strokeWidth={2}
               name={activeMetric === "weight" ? "Gewicht" : activeMetric === "bodyFat" ? "Körperfett" : "Muskelmasse"}
             />
+            
+            {/* Target Line for Goal */}
+            {goal && (
+              <ReferenceLine 
+                y={goal.target} 
+                stroke={getMetricColor()} 
+                strokeDasharray="3 3"
+                strokeWidth={2}
+                label={{
+                  position: 'right',
+                  value: `Ziel: ${goal.target}${getUnit()}`,
+                  fill: getMetricColor(),
+                  fontSize: 12
+                }}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       ) : (

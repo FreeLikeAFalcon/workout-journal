@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { ChartData } from "@/types/workout";
 import { formatDate, lbsToKg } from "@/utils/workoutUtils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LineChart, TrendingUp } from "lucide-react";
 
 interface ProgressChartProps {
   chartData: ChartData;
@@ -52,7 +52,10 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
   return (
     <div className="glass-card rounded-xl p-6 w-full h-[400px] animate-slide-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <TrendingUp size={20} className="text-accent" />
+          Fortschrittsverfolgung
+        </h3>
         
         <div className="relative">
           <button

@@ -115,7 +115,8 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
                         <input
                           type="number"
                           value={set.weight}
-                          onChange={(e) => handleUpdateSet(set.id, "weight", parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleUpdateSet(set.id, "weight", parseFloat(e.target.value) || 0)}
+                          step="0.5"
                           className={`w-20 p-1 border border-input rounded bg-transparent ${isPRSet ? "font-bold text-accent" : ""}`}
                           min="0"
                         />
@@ -151,7 +152,8 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
                     <input
                       type="number"
                       value={newSet.weight || ''}
-                      onChange={(e) => setNewSet({ ...newSet, weight: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setNewSet({ ...newSet, weight: parseFloat(e.target.value) || 0 })}
+                      step="0.5"
                       className="w-20 p-1 border border-input rounded bg-transparent"
                       placeholder="Gewicht"
                       min="0"
