@@ -23,9 +23,9 @@ const Index: React.FC = () => {
   const stats = calculateWorkoutStats(workouts);
   const chartData = prepareChartData(workouts);
   
-  // Get visible widgets sorted by position
+  // Get visible widgets sorted by position - ensure we ONLY show widgets that are marked as visible
   const visibleWidgets = widgets
-    .filter(widget => widget.visible)
+    .filter(widget => widget.visible === true)
     .sort((a, b) => a.position - b.position);
   
   // Render a specific widget based on its type

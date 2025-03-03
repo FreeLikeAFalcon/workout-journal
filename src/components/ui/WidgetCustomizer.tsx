@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { WidgetConfig, WidgetType } from "@/types/metrics";
-import { Check, GripVertical, LayoutGrid, X } from "lucide-react";
+import { GripVertical, LayoutGrid, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -80,8 +80,9 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
     onClose();
   };
 
-  // Filter to ensure each widget type appears only once
+  // Filter to ensure each widget type appears only once and is correctly sorted by position
   const uniqueWidgets = [...new Map(localWidgets.map(widget => [widget.type, widget])).values()];
+  uniqueWidgets.sort((a, b) => a.position - b.position);
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -102,33 +103,32 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
         
         <ScrollArea className="mb-6 h-[200px] pr-4">
           <div className="space-y-2">
-            {uniqueWidgets
-              .sort((a, b) => a.position - b.position)
-              .map(widget => (
-                <div
-                  key={widget.id}
-                  draggable
-                  onDragStart={() => handleDragStart(widget.id)}
-                  onDragOver={(e) => handleDragOver(e, widget.id)}
-                  onDragEnd={handleDragEnd}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    widget.visible ? "border-accent/30 bg-accent/5" : "border-border"
-                  } cursor-move`}
-                >
-                  <div className="flex items-center gap-3">
-                    <GripVertical size={16} className="text-muted-foreground" />
-                    <span>{getWidgetName(widget.type)}</span>
-                  </div>
-                  <button
-                    onClick={() => toggleVisibility(widget.id)}
-                    className={`w-5 h-5 rounded-sm flex items-center justify-center ${
-                      widget.visible ? "bg-accent text-white" : "border border-muted-foreground"
-                    }`}
-                  >
-                    {widget.visible && <Check size={12} />}
-                  </button>
+            {uniqueWidgets.map(widget => (
+              <div
+                key={widget.id}
+                draggable
+                onDragStart={() => handleDragStart(widget.id)}
+                onDragOver={(e) => handleDragOver(e, widget.id)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center justify-between p-3 rounded-lg border ${
+                  widget.visible ? "border-accent/30 bg-accent/5" : "border-border"
+                } cursor-move`}
+              >
+                <div className="flex items-center gap-3">
+                  <GripVertical size={16} className="text-muted-foreground" />
+                  <span>{getWidgetName(widget.type)}</span>
                 </div>
-              ))}
+                <button
+                  onClick={() => toggleVisibility(widget.id)}
+                  className={`w-5 h-5 rounded-sm flex items-center justify-center ${
+                    widget.visible ? "bg-accent text-white" : "border border-muted-foreground"
+                  }`}
+                  aria-label={widget.visible ? "Widget ausblenden" : "Widget einblenden"}
+                >
+                  {widget.visible && <span className="w-2 h-2">✓</span>}
+                </button>
+              </div>
+            ))}
           </div>
         </ScrollArea>
         
