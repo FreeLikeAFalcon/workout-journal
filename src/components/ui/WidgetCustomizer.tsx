@@ -79,6 +79,9 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
     onClose();
   };
 
+  // Filter to ensure each widget type appears only once
+  const uniqueWidgets = [...new Map(localWidgets.map(widget => [widget.type, widget])).values()];
+  
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="glass-card rounded-xl max-w-md w-full p-6 animate-fade-in">
@@ -98,7 +101,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
         
         <ScrollArea className="mb-6 h-[200px] pr-4">
           <div className="space-y-2">
-            {localWidgets
+            {uniqueWidgets
               .sort((a, b) => a.position - b.position)
               .map(widget => (
                 <div

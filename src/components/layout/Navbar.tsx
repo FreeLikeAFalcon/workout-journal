@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Navbar: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -42,8 +43,10 @@ const Navbar: React.FC = () => {
       
       <div className="flex items-center gap-4">
         <div className="text-sm text-muted-foreground hidden md:block">
-          Deine Fitnessreise, visualisiert
+          Here begins your journey
         </div>
+        
+        <LanguageSwitcher />
         
         {user ? (
           <DropdownMenu>

@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { formatDate } from "@/utils/workoutUtils";
-import { ChevronDown, Scale, Dumbbell, Ruler, Target } from "lucide-react";
+import { ChevronDown, Scale, Dumbbell, Ruler, TrendingUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 type MetricType = "weight" | "bodyFat" | "muscleMass";
@@ -43,7 +43,7 @@ const MetricsChart: React.FC = () => {
   const getChartIcon = () => {
     switch (activeMetric) {
       case "weight":
-        return <Scale size={18} />;
+        return <TrendingUp size={18} className="text-accent" />;
       case "bodyFat":
         return <Ruler size={18} />;
       case "muscleMass":

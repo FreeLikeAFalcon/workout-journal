@@ -13,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Navbar />
         <main className="pb-12">{children}</main>
         <footer className="text-center text-sm text-muted-foreground mt-16 pb-8">
-          <p>© {new Date().getFullYear()} KraftTracker • Deine Fitnessreise, visualisiert</p>
+          <p>© {new Date().getFullYear()} WOD-Tracker • Here begins your journey</p>
         </footer>
       </div>
     </div>
