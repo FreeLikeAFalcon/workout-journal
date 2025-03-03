@@ -20,8 +20,27 @@ const Welcome: React.FC = () => {
   }, [user, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative bg-gradient-to-b from-blue-600 to-blue-400 dark:from-blue-950 dark:to-blue-800 px-4 sm:px-6 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col items-center justify-center relative bg-gradient-to-b from-blue-600 to-blue-400 dark:from-blue-950 dark:to-blue-800 px-4 sm:px-6 transition-colors duration-300 overflow-hidden">
+      {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTZWMGg2djMwem0wIDBoMTh2NmgtMTh2LTZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-10"></div>
+      
+      {/* Woman image on the left */}
+      <div className="absolute left-0 bottom-0 h-[90%] max-h-[700px] opacity-70 translate-x-[-30%] md:translate-x-[-15%] lg:translate-x-0 hidden md:block">
+        <img 
+          src="/lovable-uploads/55ad9c25-cf66-4015-8a99-ecab3e92ebb9.png" 
+          alt="Athletic woman" 
+          className="h-full object-contain"
+        />
+      </div>
+      
+      {/* Man image on the right */}
+      <div className="absolute right-0 bottom-0 h-[90%] max-h-[700px] opacity-70 translate-x-[30%] md:translate-x-[15%] lg:translate-x-0 hidden md:block">
+        <img 
+          src="/lovable-uploads/6b3c7d11-dfa9-4b2a-a3b6-beb83f1dea16.png" 
+          alt="Athletic man" 
+          className="h-full object-contain"
+        />
+      </div>
 
       <div className="max-w-3xl w-full flex flex-col items-center z-10 animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
@@ -29,11 +48,12 @@ const Welcome: React.FC = () => {
           <h1 className="font-display text-5xl font-bold text-white">Wod-Tracker</h1>
         </div>
         
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4">
+        <div className="text-center mb-12 relative">
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm -m-4 rounded-xl -z-10"></div>
+          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4 drop-shadow-md">
             {t('welcome.title')}
           </h2>
-          <p className="text-lg text-white/80 max-w-xl mx-auto">
+          <p className="text-lg text-white max-w-xl mx-auto drop-shadow-md">
             {t('welcome.subtitle')}
           </p>
         </div>
