@@ -23,7 +23,23 @@ export type TranslationKey =
   | 'signOut'
   | 'signIn'
   | 'myAccount'
-  | 'journey';
+  | 'journey'
+  | 'loading'
+  | 'welcome.back'
+  | 'create.account'
+  | 'login.to.continue'
+  | 'register.to.start'
+  | 'login'
+  | 'register'
+  | 'email'
+  | 'email.placeholder'
+  | 'password'
+  | 'logging.in'
+  | 'username'
+  | 'username.placeholder'
+  | 'registering'
+  | 'welcome.title'
+  | 'welcome.subtitle';
 
 // Define translations for each language
 const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -45,7 +61,23 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'signOut': 'Abmelden',
     'signIn': 'Anmelden',
     'myAccount': 'Mein Account',
-    'journey': 'Here begins your journey'
+    'journey': 'Deine Fitness-Reise beginnt hier',
+    'loading': 'Laden...',
+    'welcome.back': 'Willkommen zurück',
+    'create.account': 'Konto erstellen',
+    'login.to.continue': 'Melde dich an, um fortzufahren',
+    'register.to.start': 'Registriere dich, um zu beginnen',
+    'login': 'Anmelden',
+    'register': 'Registrieren',
+    'email': 'E-Mail',
+    'email.placeholder': 'deine@email.de',
+    'password': 'Passwort',
+    'logging.in': 'Wird angemeldet...',
+    'username': 'Benutzername',
+    'username.placeholder': 'dein_benutzername',
+    'registering': 'Wird registriert...',
+    'welcome.title': 'Verfolge deinen Fortschritt, erreiche deine Ziele',
+    'welcome.subtitle': 'Die einfachste Möglichkeit, deine Workouts zu protokollieren, deine Fortschritte zu verfolgen und deine Fitness zu steigern.'
   },
   en: {
     'workouts.total': 'Total Workouts',
@@ -65,7 +97,23 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'signOut': 'Sign Out',
     'signIn': 'Sign In',
     'myAccount': 'My Account',
-    'journey': 'Here begins your journey'
+    'journey': 'Your fitness journey starts here',
+    'loading': 'Loading...',
+    'welcome.back': 'Welcome back',
+    'create.account': 'Create an account',
+    'login.to.continue': 'Sign in to continue',
+    'register.to.start': 'Register to get started',
+    'login': 'Login',
+    'register': 'Register',
+    'email': 'Email',
+    'email.placeholder': 'your@email.com',
+    'password': 'Password',
+    'logging.in': 'Signing in...',
+    'username': 'Username',
+    'username.placeholder': 'your_username',
+    'registering': 'Registering...',
+    'welcome.title': 'Track your progress, achieve your goals',
+    'welcome.subtitle': 'The easiest way to log your workouts, track your progress, and boost your fitness.'
   }
 };
 
