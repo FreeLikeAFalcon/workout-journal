@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
@@ -110,7 +111,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             sets: setsData.map(set => ({
               id: set.id,
               reps: set.reps,
-              weight: parseFloat(set.weight)
+              weight: parseFloat(set.weight as unknown as string)
             }))
           };
         }));
@@ -175,7 +176,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 .insert(sets.map((s: any) => ({
                   exercise_id: exerciseId,
                   reps: s.reps,
-                  weight: s.weight.toString()
+                  weight: s.weight, // Supabase handles number to string conversion
                 })));
 
               if (setsError) {

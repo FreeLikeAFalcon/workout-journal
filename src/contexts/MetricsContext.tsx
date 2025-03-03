@@ -118,7 +118,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         newMetrics[metricType].entries.push({
           id: metric.id,
           date: metric.date,
-          value: parseFloat(metric.value),
+          value: parseFloat(metric.value as unknown as string),
         });
       });
 
@@ -134,7 +134,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       goalsData?.forEach(goal => {
         const metricType = goal.metric_type as keyof BodyMetrics;
         newMetrics[metricType].goal = {
-          target: parseFloat(goal.target),
+          target: parseFloat(goal.target as unknown as string),
           deadline: goal.deadline || undefined,
         };
       });
@@ -225,7 +225,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .insert({
             user_id: user.id,
             metric_type: type,
-            value: value.toString(), // Convert number to string
+            value: value, // Supabase handles number to string conversion
             date: newMetric.date,
           })
           .select()
@@ -294,7 +294,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           operation = supabase
             .from('body_goals')
             .update({
-              target: goal.target.toString(), // Convert number to string
+              target: goal.target, // Supabase handles number to string conversion
               deadline: goal.deadline || null,
             })
             .eq('id', existingGoal.id);
@@ -305,7 +305,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
             .insert({
               user_id: user.id,
               metric_type: type,
-              target: goal.target.toString(), // Convert number to string
+              target: goal.target, // Supabase handles number to string conversion
               deadline: goal.deadline || null,
             });
         }
