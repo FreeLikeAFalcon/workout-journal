@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useMetrics } from "@/contexts/MetricsContext";
 import { WidgetConfig, WidgetType } from "@/types/metrics";
-import { Check, GripVertical, LayoutGrid, X, Lock } from "lucide-react";
+import { Check, GripVertical, LayoutGrid, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -14,13 +14,6 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   const { widgets, updateWidgets } = useMetrics();
   const [localWidgets, setLocalWidgets] = useState<WidgetConfig[]>([...widgets]);
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
-
-  // Check if widget is one of the standard ones that should always be displayed
-  const isStandardWidget = (type: WidgetType): boolean => {
-    return type === WidgetType.TOTAL_WORKOUTS || 
-           type === WidgetType.TOTAL_SETS || 
-           type === WidgetType.MOST_FREQUENT_EXERCISE;
-  };
 
   const getWidgetName = (type: WidgetType): string => {
     switch (type) {
@@ -44,13 +37,6 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   };
 
   const toggleVisibility = (id: string) => {
-    const widget = localWidgets.find(w => w.id === id);
-    
-    // Don't allow toggling off standard widgets
-    if (widget && isStandardWidget(widget.type)) {
-      return;
-    }
-    
     setLocalWidgets(localWidgets.map(widget => 
       widget.id === id ? { ...widget, visible: !widget.visible } : widget
     ));
@@ -90,15 +76,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   };
 
   const saveChanges = () => {
-    // Ensure standard widgets are marked as visible before saving
-    const updatedWidgets = localWidgets.map(widget => {
-      if (isStandardWidget(widget.type)) {
-        return { ...widget, visible: true };
-      }
-      return widget;
-    });
-    
-    updateWidgets(updatedWidgets);
+    updateWidgets(localWidgets);
     onClose();
   };
 
@@ -119,8 +97,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
         </div>
         
         <p className="text-muted-foreground mb-4">
-          Ziehe die Widgets, um ihre Reihenfolge zu ändern. Klicke auf ein Widget, um es ein- oder auszublenden. 
-          Widgets mit <Lock size={12} className="inline mb-1 ml-1" /> werden immer angezeigt.
+          Ziehe die Widgets, um ihre Reihenfolge zu ändern. Klicke auf ein Widget, um es ein- oder auszublenden.
         </p>
         
         <ScrollArea className="mb-6 h-[200px] pr-4">
@@ -135,30 +112,20 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
                   onDragOver={(e) => handleDragOver(e, widget.id)}
                   onDragEnd={handleDragEnd}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
-                    widget.visible || isStandardWidget(widget.type) ? "border-accent/30 bg-accent/5" : "border-border"
+                    widget.visible ? "border-accent/30 bg-accent/5" : "border-border"
                   } cursor-move`}
                 >
                   <div className="flex items-center gap-3">
                     <GripVertical size={16} className="text-muted-foreground" />
                     <span>{getWidgetName(widget.type)}</span>
-                    {isStandardWidget(widget.type) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span><Lock size={12} className="text-muted-foreground" /></span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Immer sichtbar</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
                   </div>
                   <button
                     onClick={() => toggleVisibility(widget.id)}
                     className={`w-5 h-5 rounded-sm flex items-center justify-center ${
-                      widget.visible || isStandardWidget(widget.type) ? "bg-accent text-white" : "border border-muted-foreground"
-                    } ${isStandardWidget(widget.type) ? "cursor-not-allowed opacity-70" : ""}`}
+                      widget.visible ? "bg-accent text-white" : "border border-muted-foreground"
+                    }`}
                   >
-                    {(widget.visible || isStandardWidget(widget.type)) && <Check size={12} />}
+                    {widget.visible && <Check size={12} />}
                   </button>
                 </div>
               ))}
