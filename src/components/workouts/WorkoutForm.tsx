@@ -5,6 +5,8 @@ import { generateId } from "@/utils/workoutUtils";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Plus, Save, X } from "lucide-react";
 import ExerciseItem from "./ExerciseItem";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const WorkoutForm: React.FC = () => {
   const { addWorkout } = useWorkout();
@@ -14,6 +16,7 @@ const WorkoutForm: React.FC = () => {
   const [phase, setPhase] = useState("Phase 1");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [newExerciseName, setNewExerciseName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddExercise = () => {
     if (newExerciseName.trim()) {
@@ -81,26 +84,44 @@ const WorkoutForm: React.FC = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only save if there are exercises with sets
+    // Nur speichern, wenn es Übungen mit Sets gibt
     if (exercises.length > 0 && exercises.some(ex => ex.sets.length > 0)) {
-      const newWorkout: Omit<Workout, "id"> = {
-        date: new Date(workoutDate).toISOString(),
-        program,
-        phase,
-        exercises,
-      };
+      setIsSubmitting(true);
       
-      addWorkout(newWorkout);
-      
-      // Reset form
-      setWorkoutDate(new Date().toISOString().split("T")[0]);
-      setProgram("MAPS Anabolic");
-      setPhase("Phase 1");
-      setExercises([]);
-      setIsFormVisible(false);
+      try {
+        const newWorkout: Omit<Workout, "id"> = {
+          date: new Date(workoutDate).toISOString(),
+          program,
+          phase,
+          exercises,
+        };
+        
+        await addWorkout(newWorkout);
+        
+        // Formular zurücksetzen
+        setWorkoutDate(new Date().toISOString().split("T")[0]);
+        setProgram("MAPS Anabolic");
+        setPhase("Phase 1");
+        setExercises([]);
+        setIsFormVisible(false);
+        
+        toast({
+          title: "Workout gespeichert",
+          description: `Dein Workout für ${new Date(workoutDate).toLocaleDateString('de-DE')} wurde erfolgreich gespeichert.`,
+        });
+      } catch (error) {
+        console.error("Fehler beim Speichern des Workouts:", error);
+        toast({
+          title: "Fehler",
+          description: "Beim Speichern des Workouts ist ein Fehler aufgetreten.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -111,13 +132,13 @@ const WorkoutForm: React.FC = () => {
   return (
     <div className="mb-8 animate-slide-up">
       {!isFormVisible ? (
-        <button
+        <Button
           onClick={toggleForm}
           className="glass-card flex items-center justify-center w-full p-4 gap-2 rounded-xl text-primary font-medium hover:shadow-md transition-all"
         >
           <Plus size={18} />
           Neues Workout erfassen
-        </button>
+        </Button>
       ) : (
         <div className="glass-card rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
@@ -196,6 +217,10 @@ const WorkoutForm: React.FC = () => {
                     key={exercise.id}
                     exercise={exercise}
                     workoutId="temp"
+                    onRemoveExercise={handleRemoveExercise}
+                    onAddSet={handleAddSet}
+                    onRemoveSet={handleRemoveSet}
+                    onUpdateSet={handleUpdateSet}
                   />
                 ))}
               </div>
@@ -206,14 +231,14 @@ const WorkoutForm: React.FC = () => {
             )}
             
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                disabled={!exercises.length || !exercises.some(ex => ex.sets.length > 0)}
+                className="flex items-center gap-2 px-4 py-2"
+                disabled={!exercises.length || !exercises.some(ex => ex.sets.length > 0) || isSubmitting}
               >
                 <Save size={16} />
-                Workout speichern
-              </button>
+                {isSubmitting ? "Wird gespeichert..." : "Workout speichern"}
+              </Button>
             </div>
           </form>
         </div>

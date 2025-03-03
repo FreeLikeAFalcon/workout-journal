@@ -1,41 +1,50 @@
+
 import React, { useState } from "react";
 import { Exercise, Set as WorkoutSet } from "@/types/workout";
-import { calculateExerciseVolume, generateId, lbsToKg } from "@/utils/workoutUtils";
 import { Trash, Plus, ChevronDown, ChevronUp, Activity } from "lucide-react";
-import { useWorkout } from "@/contexts/WorkoutContext";
 
 interface ExerciseItemProps {
   exercise: Exercise;
   workoutId: string;
   isPersonalRecord?: boolean;
+  onRemoveExercise?: (id: string) => void;
+  onAddSet?: (exerciseId: string, set: Omit<WorkoutSet, "id">) => void;
+  onRemoveSet?: (exerciseId: string, setId: string) => void;
+  onUpdateSet?: (exerciseId: string, setId: string, field: string, value: number) => void;
 }
 
-const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPersonalRecord = false }) => {
+const ExerciseItem: React.FC<ExerciseItemProps> = ({
+  exercise,
+  workoutId,
+  isPersonalRecord = false,
+  onRemoveExercise,
+  onAddSet,
+  onRemoveSet,
+  onUpdateSet
+}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [newSet, setNewSet] = useState<Omit<WorkoutSet, "id">>({ reps: 0, weight: 0 });
-  const { removeExerciseFromWorkout, addSetToExercise, removeSetFromExercise, updateSet } = useWorkout();
 
-  const maxWeightSet = isPersonalRecord ? 
+  const maxWeightSet = isPersonalRecord && exercise.sets.length > 0 ? 
     [...exercise.sets].sort((a, b) => b.weight - a.weight)[0] : null;
 
   const handleAddSet = () => {
     if (newSet.reps > 0) {
-      addSetToExercise(workoutId, exercise.id, newSet);
+      if (onAddSet) {
+        onAddSet(exercise.id, newSet);
+      }
       setNewSet({ reps: 0, weight: 0 });
     }
   };
 
   const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number) => {
-    const setToUpdate = exercise.sets.find(s => s.id === setId);
-    if (setToUpdate) {
-      updateSet(workoutId, exercise.id, {
-        ...setToUpdate,
-        [field]: value
-      });
+    if (onUpdateSet) {
+      onUpdateSet(exercise.id, setId, field, value);
     }
   };
 
-  const totalVolume = calculateExerciseVolume(exercise);
+  // Berechnung des Gesamtvolumens
+  const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
 
   return (
     <div className="glass-card rounded-xl mb-4 overflow-hidden animate-slide-up">
@@ -55,13 +64,15 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
         
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground hidden sm:block">
-            Gesamtvolumen: <span className="font-medium">{lbsToKg(totalVolume).toFixed(1)} kg</span>
+            Gesamtvolumen: <span className="font-medium">{totalVolume.toFixed(1)} kg</span>
           </div>
           
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              removeExerciseFromWorkout(workoutId, exercise.id);
+              if (onRemoveExercise) {
+                onRemoveExercise(exercise.id);
+              }
             }}
             className="text-muted-foreground hover:text-destructive transition-colors"
           >
@@ -110,11 +121,11 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                         />
                       </td>
                       <td className={`py-2 text-sm ${isPRSet ? "font-bold text-accent" : ""}`}>
-                        {lbsToKg(set.reps * set.weight).toFixed(1)} kg
+                        {(set.reps * set.weight).toFixed(1)} kg
                       </td>
                       <td className="py-2 text-right">
                         <button
-                          onClick={() => removeSetFromExercise(workoutId, exercise.id, set.id)}
+                          onClick={() => onRemoveSet && onRemoveSet(exercise.id, set.id)}
                           className="text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash size={14} />
@@ -146,7 +157,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({ exercise, workoutId, isPers
                       min="0"
                     />
                   </td>
-                  <td className="py-2 text-sm">{lbsToKg((newSet.reps || 0) * (newSet.weight || 0)).toFixed(1)} kg</td>
+                  <td className="py-2 text-sm">{((newSet.reps || 0) * (newSet.weight || 0)).toFixed(1)} kg</td>
                   <td className="py-2 text-right">
                     <button
                       onClick={handleAddSet}
