@@ -39,7 +39,13 @@ export type TranslationKey =
   | 'username.placeholder'
   | 'registering'
   | 'welcome.title'
-  | 'welcome.subtitle';
+  | 'welcome.subtitle'
+  | 'error'
+  | 'success'
+  | 'please.fill.all.fields'
+  | 'password.too.short'
+  | 'registration.successful'
+  | 'registration.failed';
 
 // Define translations for each language
 const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -77,7 +83,13 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'username.placeholder': 'dein_benutzername',
     'registering': 'Wird registriert...',
     'welcome.title': 'Verfolge deinen Fortschritt, erreiche deine Ziele',
-    'welcome.subtitle': 'Die einfachste Möglichkeit, deine Workouts zu protokollieren, deine Fortschritte zu verfolgen und deine Fitness zu steigern.'
+    'welcome.subtitle': 'Die einfachste Möglichkeit, deine Workouts zu protokollieren, deine Fortschritte zu verfolgen und deine Fitness zu steigern.',
+    'error': 'Fehler',
+    'success': 'Erfolg',
+    'please.fill.all.fields': 'Bitte fülle alle Felder aus',
+    'password.too.short': 'Passwort muss mindestens 6 Zeichen lang sein',
+    'registration.successful': 'Registrierung erfolgreich',
+    'registration.failed': 'Registrierung fehlgeschlagen'
   },
   en: {
     'workouts.total': 'Total Workouts',
@@ -113,7 +125,13 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'username.placeholder': 'your_username',
     'registering': 'Registering...',
     'welcome.title': 'Track your progress, achieve your goals',
-    'welcome.subtitle': 'The easiest way to log your workouts, track your progress, and boost your fitness.'
+    'welcome.subtitle': 'The easiest way to log your workouts, track your progress, and boost your fitness.',
+    'error': 'Error',
+    'success': 'Success',
+    'please.fill.all.fields': 'Please fill all fields',
+    'password.too.short': 'Password must be at least 6 characters',
+    'registration.successful': 'Registration successful',
+    'registration.failed': 'Registration failed'
   }
 };
 
