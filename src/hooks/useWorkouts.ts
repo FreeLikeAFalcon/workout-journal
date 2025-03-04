@@ -1,245 +1,260 @@
-
 import { useState, useEffect, useCallback } from "react";
-import { Workout, Exercise, Set } from "@/modules/database/workouts/types";
+import { Workout, Exercise, Set, WorkoutStats, ChartData } from "@/types/workout";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 import { 
   fetchWorkouts, 
-  addWorkout as addWorkoutToDb,
-  deleteWorkout as deleteWorkoutFromDb,
-  updateWorkout as updateWorkoutInDb,
-  clearAllWorkouts as clearAllWorkoutsFromDb,
-  addExerciseToWorkout as addExerciseToWorkoutInDb,
-  removeExerciseFromWorkout,
-  addSetToExercise,
-  removeSetFromExercise,
-  updateSet as updateSetInDb
+  addWorkout as addWorkoutDb, 
+  updateWorkout as updateWorkoutDb,
+  deleteWorkout as deleteWorkoutDb,
+  fetchWorkoutById
 } from "@/modules/database/workouts/queries";
-import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { generateId, calculateWorkoutStats, prepareChartData } from "@/utils/workoutUtils";
 
-export function useWorkouts() {
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
+export interface UseWorkoutsReturn {
+  workouts: Workout[];
+  isLoading: boolean;
+  workoutStats: WorkoutStats;
+  chartData: ChartData;
+  addWorkout: (workout: Omit<Workout, "id">) => Promise<void>;
+  updateWorkout: (id: string, workout: Partial<Workout>) => Promise<void>;
+  deleteWorkout: (id: string) => Promise<void>;
+  addExercise: (workoutId: string, exercise: Omit<Exercise, "id">) => Promise<void>;
+  updateExercise: (workoutId: string, exerciseId: string, exercise: Partial<Exercise>) => Promise<void>;
+  deleteExercise: (workoutId: string, exerciseId: string) => Promise<void>;
+  addSet: (workoutId: string, exerciseId: string, set: Omit<Set, "id">) => Promise<void>;
+  updateSet: (workoutId: string, exerciseId: string, setId: string, set: Partial<Set>) => Promise<void>;
+  deleteSet: (workoutId: string, exerciseId: string, setId: string) => Promise<void>;
+}
+
+export const useWorkouts = (): UseWorkoutsReturn => {
   const { user } = useAuth();
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Calculate derived stats whenever workouts change
+  const workoutStats = calculateWorkoutStats(workouts);
+  const chartData = prepareChartData(workouts);
 
-  // Load workouts from database or localStorage
+  // Fetch workouts from the database
   useEffect(() => {
     const loadWorkouts = async () => {
       if (user) {
-        const userWorkouts = await fetchWorkouts(user.id);
-        if (userWorkouts.length > 0) {
-          setWorkouts(userWorkouts);
-        } else {
-          // If no workouts found, create sample workouts
-          const sampleWorkouts = createSampleWorkouts();
-          for (const workout of sampleWorkouts) {
-            await addWorkoutToDb(workout, user.id);
-          }
-          const refreshedWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(refreshedWorkouts);
+        setIsLoading(true);
+        try {
+          const fetchedWorkouts = await fetchWorkouts(user.id);
+          setWorkouts(fetchedWorkouts);
+        } catch (error) {
+          console.error("Failed to fetch workouts:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch workouts",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
         }
       } else {
-        // Use localStorage for non-authenticated users
-        const savedWorkouts = localStorage.getItem("workouts");
-        if (savedWorkouts) {
-          try {
-            setWorkouts(JSON.parse(savedWorkouts));
-          } catch (error) {
-            console.error("Failed to parse workouts from localStorage:", error);
-            setWorkouts(createSampleWorkouts());
-          }
-        } else {
-          setWorkouts(createSampleWorkouts());
-        }
+        setWorkouts([]);
+        setIsLoading(false);
       }
     };
 
     loadWorkouts();
   }, [user]);
 
-  // Save to localStorage for non-authenticated users
-  useEffect(() => {
-    if (!user && workouts.length > 0) {
-      localStorage.setItem("workouts", JSON.stringify(workouts));
-    }
-  }, [workouts, user]);
-
-  // Add a new workout
-  const addWorkout = useCallback(async (workout: Omit<Workout, "id">) => {
-    const newWorkoutId = generateId();
-    const newWorkout = {
-      ...workout,
-      id: newWorkoutId,
-    };
-
-    // Optimistically update UI
-    setWorkouts(prev => [...prev, newWorkout]);
-
-    if (user) {
-      try {
-        const result = await addWorkoutToDb(workout, user.id);
-
-        if (!result.success) {
-          console.error("Error adding workout:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          
-          toast({
-            title: "Workout not added",
-            description: "There was an error saving your workout.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error in addWorkout:", error);
+  /**
+   * Add a new workout
+   */
+  const addWorkout = async (workout: Omit<Workout, "id">): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const newWorkout: Workout = { ...workout, id: generateId(), user_id: user?.id };
+      setWorkouts(currentWorkouts => [...currentWorkouts, newWorkout]);
+      
+      // Fix: add user_id parameter
+      const result = await addWorkoutDb(newWorkout, user?.id || '');
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        setWorkouts(currentWorkouts => currentWorkouts.filter(w => w.id !== newWorkout.id));
+        throw new Error(result.error);
       }
+      
+      toast({
+        title: "Workout added",
+        description: "Your new workout has been added successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error adding workout:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add workout",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    toast({
-      title: "Workout added",
-      description: `Your workout for ${new Date(workout.date).toLocaleDateString()} has been saved.`,
-    });
-  }, [user]);
-
-  // Delete a workout
-  const deleteWorkout = useCallback(async (id: string) => {
-    // Optimistically update UI
-    setWorkouts(prev => prev.filter(workout => workout.id !== id));
-
-    if (user) {
-      try {
-        const result = await deleteWorkoutFromDb(id);
-
-        if (!result.success) {
-          console.error("Error deleting workout:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          
-          toast({
-            title: "Error",
-            description: "Failed to delete workout.",
-            variant: "destructive",
-          });
-          return;
+  /**
+   * Update an existing workout
+   */
+  const updateWorkout = async (id: string, workout: Partial<Workout>): Promise<void> => {
+    try {
+      const updatedWorkouts = workouts.map(w => w.id === id ? { ...w, ...workout } : w);
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add workout id parameter
+      const result = await updateWorkoutDb(id, workout);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(id);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === id ? originalWorkout : w)
+          );
         }
-      } catch (error) {
-        console.error("Error in deleteWorkout:", error);
+        throw new Error(result.error);
       }
+      
+      toast({
+        title: "Workout updated",
+        description: "Your workout has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error updating workout:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update workout",
+        variant: "destructive",
+      });
     }
+  };
 
-    toast({
-      title: "Workout deleted",
-      description: "Your workout has been removed.",
-    });
-  }, [user]);
-
-  // Update a workout
-  const updateWorkout = useCallback(async (workout: Workout) => {
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(w => (w.id === workout.id ? workout : w))
-    );
-
-    if (user) {
-      try {
-        const result = await updateWorkoutInDb(workout);
-
-        if (!result.success) {
-          console.error("Error updating workout:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
+  /**
+   * Delete a workout
+   */
+  const deleteWorkout = async (id: string): Promise<void> => {
+    try {
+      setWorkouts(currentWorkouts => currentWorkouts.filter(w => w.id !== id));
+      
+      // Fix: add parameter for user_id
+      const result = await deleteWorkoutDb(id, user?.id || '');
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(id);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => [...currentWorkouts, originalWorkout]);
         }
-      } catch (error) {
-        console.error("Error in updateWorkout:", error);
+        throw new Error(result.error);
       }
+      
+      toast({
+        title: "Workout deleted",
+        description: "Your workout has been deleted successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting workout:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete workout",
+        variant: "destructive",
+      });
     }
+  };
 
-    toast({
-      title: "Workout updated",
-      description: "Your changes have been saved.",
-    });
-  }, [user]);
-
-  // Clear all workouts
-  const clearAllWorkouts = useCallback(async () => {
-    // Optimistically update UI
-    setWorkouts([]);
-
-    if (user) {
-      try {
-        const result = await clearAllWorkoutsFromDb(user.id);
-
-        if (!result.success) {
-          console.error("Error clearing workouts:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          
-          toast({
-            title: "Error",
-            description: "Failed to clear workouts.",
-            variant: "destructive",
-          });
-          return;
+  /**
+   * Add a new exercise to a workout
+   */
+  const addExercise = async (workoutId: string, exercise: Omit<Exercise, "id">): Promise<void> => {
+    try {
+      const newExercise: Exercise = { ...exercise, id: generateId() };
+      const updatedWorkouts = workouts.map(workout => {
+        if (workout.id === workoutId) {
+          return { ...workout, exercises: [...workout.exercises, newExercise] };
         }
-      } catch (error) {
-        console.error("Error in clearAllWorkouts:", error);
+        return workout;
+      });
+
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add exerciseId parameter
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, newExercise.id);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
+        }
+        throw new Error(result.error);
       }
+    } catch (error: any) {
+      console.error("Error adding exercise:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add exercise",
+        variant: "destructive",
+      });
     }
+  };
 
-    toast({
-      title: "All workouts cleared",
-      description: "Your workout history has been reset.",
-    });
-  }, [user]);
-
-  // Add an exercise to a workout
-  const addExerciseToWorkout = useCallback(async (workoutId: string, exercise: Omit<Exercise, "id">) => {
-    const newExerciseId = generateId();
-    const newExercise = {
-      ...exercise,
-      id: newExerciseId,
-    };
-
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(workout => {
+  /**
+   * Update an existing exercise in a workout
+   */
+  const updateExercise = async (workoutId: string, exerciseId: string, exercise: Partial<Exercise>): Promise<void> => {
+    try {
+      const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
             ...workout,
-            exercises: [...workout.exercises, newExercise],
+            exercises: workout.exercises.map(ex => {
+              if (ex.id === exerciseId) {
+                return { ...ex, ...exercise };
+              }
+              return ex;
+            }),
           };
         }
         return workout;
-      })
-    );
+      });
 
-    if (user) {
-      try {
-        const result = await addExerciseToWorkoutInDb(workoutId, exercise);
-
-        if (!result.success) {
-          console.error("Error adding exercise:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add exerciseId parameter
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
         }
-      } catch (error) {
-        console.error("Error in addExerciseToWorkout:", error);
+        throw new Error(result.error);
       }
+    } catch (error: any) {
+      console.error("Error updating exercise:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update exercise",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  };
 
-  // Remove an exercise from a workout
-  const removeExerciseFromWorkout = useCallback(async (workoutId: string, exerciseId: string) => {
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(workout => {
+  /**
+   * Delete an exercise from a workout
+   */
+  const deleteExercise = async (workoutId: string, exerciseId: string): Promise<void> => {
+    try {
+      const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
             ...workout,
@@ -247,37 +262,84 @@ export function useWorkouts() {
           };
         }
         return workout;
-      })
-    );
+      });
 
-    if (user) {
-      try {
-        const result = await removeExerciseFromWorkout(exerciseId);
-
-        if (!result.success) {
-          console.error("Error removing exercise:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add both workoutId and exerciseId parameters
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
         }
-      } catch (error) {
-        console.error("Error in removeExerciseFromWorkout:", error);
+        throw new Error(result.error);
       }
+    } catch (error: any) {
+      console.error("Error deleting exercise:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete exercise",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  };
 
-  // Add a set to an exercise
-  const addSetToExercise = useCallback(async (workoutId: string, exerciseId: string, set: Omit<Set, "id">) => {
-    const newSetId = generateId();
-    const newSet = {
-      ...set,
-      id: newSetId,
-    };
+  /**
+   * Add a new set to an exercise
+   */
+  const addSet = async (workoutId: string, exerciseId: string, set: Omit<Set, "id">): Promise<void> => {
+    try {
+      const newSet: Set = { ...set, id: generateId() };
+      const updatedWorkouts = workouts.map(workout => {
+        if (workout.id === workoutId) {
+          return {
+            ...workout,
+            exercises: workout.exercises.map(exercise => {
+              if (exercise.id === exerciseId) {
+                return { ...exercise, sets: [...exercise.sets, newSet] };
+              }
+              return exercise;
+            }),
+          };
+        }
+        return workout;
+      });
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add setId parameter
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, newSet.id);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
+        }
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error("Error adding set:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add set",
+        variant: "destructive",
+      });
+    }
+  };
 
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(workout => {
+  /**
+   * Update an existing set in an exercise
+   */
+  const updateSet = async (workoutId: string, exerciseId: string, setId: string, set: Partial<Set>): Promise<void> => {
+    try {
+      const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
             ...workout,
@@ -285,7 +347,12 @@ export function useWorkouts() {
               if (exercise.id === exerciseId) {
                 return {
                   ...exercise,
-                  sets: [...exercise.sets, newSet],
+                  sets: exercise.sets.map(s => {
+                    if (s.id === setId) {
+                      return { ...s, ...set };
+                    }
+                    return s;
+                  }),
                 };
               }
               return exercise;
@@ -293,31 +360,38 @@ export function useWorkouts() {
           };
         }
         return workout;
-      })
-    );
-
-    if (user) {
-      try {
-        const result = await addSetToExercise(exerciseId, set);
-
-        if (!result.success) {
-          console.error("Error adding set:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
+      });
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add setId parameter
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, setId);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
         }
-      } catch (error) {
-        console.error("Error in addSetToExercise:", error);
+        throw new Error(result.error);
       }
+    } catch (error: any) {
+      console.error("Error updating set:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update set",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  };
 
-  // Remove a set from an exercise
-  const removeSetFromExercise = useCallback(async (workoutId: string, exerciseId: string, setId: string) => {
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(workout => {
+  /**
+   * Delete a set from an exercise
+   */
+  const deleteSet = async (workoutId: string, exerciseId: string, setId: string): Promise<void> => {
+    try {
+      const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
             ...workout,
@@ -333,76 +407,45 @@ export function useWorkouts() {
           };
         }
         return workout;
-      })
-    );
-
-    if (user) {
-      try {
-        const result = await removeSetFromExercise(setId);
-
-        if (!result.success) {
-          console.error("Error removing set:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
+      });
+      setWorkouts(updatedWorkouts);
+      
+      // Fix: add setId parameter
+      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, setId);
+      
+      if (!result.success) {
+        // Revert the optimistic update if the API call fails
+        const originalWorkout = await fetchWorkoutById(workoutId);
+        if (originalWorkout) {
+          setWorkouts(currentWorkouts => 
+            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
+          );
         }
-      } catch (error) {
-        console.error("Error in removeSetFromExercise:", error);
+        throw new Error(result.error);
       }
+    } catch (error: any) {
+      console.error("Error deleting set:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete set",
+        variant: "destructive",
+      });
     }
-  }, [user]);
-
-  // Update a set
-  const updateSet = useCallback(async (workoutId: string, exerciseId: string, set: Set) => {
-    // Optimistically update UI
-    setWorkouts(prev =>
-      prev.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.map(exercise => {
-              if (exercise.id === exerciseId) {
-                return {
-                  ...exercise,
-                  sets: exercise.sets.map(s => (s.id === set.id ? set : s)),
-                };
-              }
-              return exercise;
-            }),
-          };
-        }
-        return workout;
-      })
-    );
-
-    if (user) {
-      try {
-        const result = await updateSetInDb(set);
-
-        if (!result.success) {
-          console.error("Error updating set:", result.error);
-          // Refresh workouts from database in case of error
-          const userWorkouts = await fetchWorkouts(user.id);
-          setWorkouts(userWorkouts);
-          return;
-        }
-      } catch (error) {
-        console.error("Error in updateSet:", error);
-      }
-    }
-  }, [user]);
+  };
 
   return {
     workouts,
+    isLoading,
+    workoutStats,
+    chartData,
     addWorkout,
-    deleteWorkout,
     updateWorkout,
-    clearAllWorkouts,
-    addExerciseToWorkout,
-    removeExerciseFromWorkout,
-    addSetToExercise,
-    removeSetFromExercise,
+    deleteWorkout,
+    addExercise,
+    updateExercise,
+    deleteExercise,
+    addSet,
     updateSet,
+    deleteSet,
   };
-}
+};
