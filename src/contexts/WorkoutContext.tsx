@@ -25,7 +25,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const {
     workouts,
     isLoading,
-    error: workoutsError,
+    // The useWorkouts hook doesn't have an 'error' property but a 'workoutStats' and other properties
+    // Let's set a default null value for the error since we need to match the WorkoutContextType
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout: updateWorkoutHook,
@@ -35,6 +36,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteSet,
     updateSet: updateSetHook,
   } = useWorkouts();
+
+  // Setting a default error value to null to match the WorkoutContextType
+  const workoutsError = null;
   
   // Create adapter functions to match the expected interface
   const addExerciseToWorkout = async (workoutId: string, exercise: Omit<Exercise, "id">) => {
