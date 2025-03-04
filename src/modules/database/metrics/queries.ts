@@ -1,15 +1,15 @@
 
-import { supabaseClient } from '@/integrations/supabase/client';
-import { BodyMetrics, MetricEntry, MetricGoal, WidgetConfig } from '@/types/metrics';
+import { supabase } from '@/integrations/supabase/client';
+import { BodyMetrics, WidgetConfig } from '@/types/metrics';
 
 export const fetchMetrics = async () => {
-  const { data: metricsData, error: metricsError } = await supabaseClient
-    .from('metrics')
+  const { data: metricsData, error: metricsError } = await supabase
+    .from('body_metrics')
     .select('*')
     .order('date', { ascending: false });
 
-  const { data: goalsData, error: goalsError } = await supabaseClient
-    .from('metric_goals')
+  const { data: goalsData, error: goalsError } = await supabase
+    .from('body_goals')
     .select('*');
 
   if (metricsError) {
@@ -29,12 +29,13 @@ export const fetchMetrics = async () => {
 };
 
 export const addMetricEntry = async (data: { type: string; value: number; date: string }) => {
-  const { data: insertedData, error } = await supabaseClient
-    .from('metrics')
+  const { data: insertedData, error } = await supabase
+    .from('body_metrics')
     .insert({
       metric_type: data.type,
       value: data.value,
       date: data.date,
+      user_id: supabase.auth.getUser().then(result => result.data.user?.id)
     })
     .select()
     .single();
@@ -49,16 +50,16 @@ export const addMetricEntry = async (data: { type: string; value: number; date: 
 
 export const updateMetricGoal = async (type: string, goal: { target: number; deadline?: string }) => {
   // First check if the goal exists
-  const { data: existingGoal } = await supabaseClient
-    .from('metric_goals')
+  const { data: existingGoal } = await supabase
+    .from('body_goals')
     .select('id')
     .eq('metric_type', type)
     .maybeSingle();
 
   if (existingGoal) {
     // Update existing goal
-    const { error } = await supabaseClient
-      .from('metric_goals')
+    const { error } = await supabase
+      .from('body_goals')
       .update({
         target: goal.target,
         deadline: goal.deadline,
@@ -71,12 +72,14 @@ export const updateMetricGoal = async (type: string, goal: { target: number; dea
     }
   } else {
     // Create new goal
-    const { error } = await supabaseClient
-      .from('metric_goals')
+    const { data: user } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('body_goals')
       .insert({
         metric_type: type,
         target: goal.target,
         deadline: goal.deadline,
+        user_id: user.user?.id
       });
 
     if (error) {
@@ -89,8 +92,8 @@ export const updateMetricGoal = async (type: string, goal: { target: number; dea
 };
 
 export const fetchWidgets = async () => {
-  const { data, error } = await supabaseClient
-    .from('widgets')
+  const { data, error } = await supabase
+    .from('widget_configs')
     .select('*')
     .order('position', { ascending: true });
 
@@ -102,32 +105,43 @@ export const fetchWidgets = async () => {
   return data;
 };
 
-export const updateWidgets = async (widgets: WidgetConfig[]) => {
-  // First delete all widgets
-  const { error: deleteError } = await supabaseClient
-    .from('widgets')
-    .delete()
-    .neq('id', '0'); // Dummy condition to delete all
+export const updateWidgets = async (widgets: WidgetConfig[]): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    // First delete all widgets for the user
+    const { error: deleteError } = await supabase
+      .from('widget_configs')
+      .delete()
+      .eq('user_id', user.user?.id);
 
-  if (deleteError) {
-    console.error('Error deleting widgets:', deleteError);
-    throw new Error('Failed to update widgets');
+    if (deleteError) {
+      console.error('Error deleting widgets:', deleteError);
+      throw new Error('Failed to update widgets');
+    }
+
+    // Then insert the new widgets
+    const { error: insertError } = await supabase
+      .from('widget_configs')
+      .insert(widgets.map(w => ({
+        id: w.id,
+        type: w.type,
+        position: w.position,
+        visible: w.visible,
+        user_id: user.user?.id
+      })));
+
+    if (insertError) {
+      console.error('Error inserting widgets:', insertError);
+      throw new Error('Failed to update widgets');
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in updateWidgets:", error);
+    return { 
+      success: false, 
+      error: error.message || "Failed to update widgets" 
+    };
   }
-
-  // Then insert the new widgets
-  const { error: insertError } = await supabaseClient
-    .from('widgets')
-    .insert(widgets.map(w => ({
-      id: w.id,
-      type: w.type,
-      position: w.position,
-      visible: w.visible
-    })));
-
-  if (insertError) {
-    console.error('Error inserting widgets:', insertError);
-    throw new Error('Failed to update widgets');
-  }
-
-  return widgets;
 };

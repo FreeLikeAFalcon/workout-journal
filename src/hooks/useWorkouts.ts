@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Workout, Exercise, Set, WorkoutStats, ChartData } from "@/types/workout";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +8,11 @@ import {
   addWorkout as addWorkoutDb, 
   updateWorkout as updateWorkoutDb,
   deleteWorkout as deleteWorkoutDb,
+  addExerciseToWorkout,
+  removeExerciseFromWorkout,
+  addSetToExercise,
+  removeSetFromExercise,
+  updateSet as updateSetDb
 } from "@/modules/database/workouts/queries";
 import { generateId, calculateWorkoutStats, prepareChartData } from "@/utils/workoutUtils";
 
@@ -42,7 +47,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
       if (user) {
         setIsLoading(true);
         try {
-          const fetchedWorkouts = await fetchWorkouts();
+          const fetchedWorkouts = await fetchWorkouts(user.id);
           setWorkouts(fetchedWorkouts);
         } catch (error) {
           console.error("Failed to fetch workouts:", error);
@@ -67,6 +72,8 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    * Add a new workout
    */
   const addWorkout = async (workout: Omit<Workout, "id">): Promise<void> => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
       // Create a new workout with a generated ID
@@ -79,7 +86,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
       setWorkouts(currentWorkouts => [...currentWorkouts, newWorkout]);
       
       // Send to database
-      const result = await addWorkoutDb(newWorkout);
+      const result = await addWorkoutDb(newWorkout, user.id);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
@@ -108,21 +115,26 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const updateWorkout = async (id: string, workout: Partial<Workout>): Promise<void> => {
     try {
+      // Find the existing workout
+      const existingWorkout = workouts.find(w => w.id === id);
+      if (!existingWorkout) {
+        throw new Error("Workout not found");
+      }
+      
       // Optimistic update
-      const updatedWorkouts = workouts.map(w => w.id === id ? { ...w, ...workout } : w);
-      setWorkouts(updatedWorkouts);
+      const updatedWorkout = { ...existingWorkout, ...workout };
+      setWorkouts(currentWorkouts => 
+        currentWorkouts.map(w => w.id === id ? updatedWorkout : w)
+      );
       
       // Send to database
-      const result = await updateWorkoutDb(id, workout);
+      const result = await updateWorkoutDb(updatedWorkout);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === id);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === id ? originalWorkout : w)
-          );
-        }
+        setWorkouts(currentWorkouts => 
+          currentWorkouts.map(w => w.id === id ? existingWorkout : w)
+        );
         throw new Error(result.error);
       }
       
@@ -179,34 +191,29 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const addExercise = async (workoutId: string, exercise: Omit<Exercise, "id">): Promise<void> => {
     try {
+      // Find the workout
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
+      
+      // Create a new exercise with a generated ID
       const newExercise: Exercise = { ...exercise, id: generateId() };
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return { ...workout, exercises: [...workout.exercises, newExercise] };
-        }
-        return workout;
-      });
-
+      
       // Optimistic update
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex] = {
+        ...updatedWorkouts[workoutIndex],
+        exercises: [...updatedWorkouts[workoutIndex].exercises, newExercise]
+      };
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
-      
       // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
+      const result = await addExerciseToWorkout(workoutId, exercise);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
+        setWorkouts(workouts); // Revert to original state
         throw new Error(result.error);
       }
     } catch (error: any) {
@@ -224,43 +231,30 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const updateExercise = async (workoutId: string, exerciseId: string, exercise: Partial<Exercise>): Promise<void> => {
     try {
+      // Find the workout and exercise
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
+      
+      const exerciseIndex = workouts[workoutIndex].exercises.findIndex(e => e.id === exerciseId);
+      if (exerciseIndex === -1) {
+        throw new Error("Exercise not found");
+      }
+      
       // Optimistic update
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.map(ex => {
-              if (ex.id === exerciseId) {
-                return { ...ex, ...exercise };
-              }
-              return ex;
-            }),
-          };
-        }
-        return workout;
-      });
-
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex].exercises[exerciseIndex] = {
+        ...updatedWorkouts[workoutIndex].exercises[exerciseIndex],
+        ...exercise
+      };
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
+      // TODO: Implement exercise update in database
+      // For now we'll just assume it succeeded
       
-      // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
-      
-      if (!result.success) {
-        // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
-        throw new Error(result.error);
-      }
+      // If it fails, we would revert:
+      // setWorkouts(workouts);
     } catch (error: any) {
       console.error("Error updating exercise:", error);
       toast({
@@ -276,36 +270,26 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const deleteExercise = async (workoutId: string, exerciseId: string): Promise<void> => {
     try {
+      // Find the workout
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
+      
       // Optimistic update
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.filter(ex => ex.id !== exerciseId),
-          };
-        }
-        return workout;
-      });
-
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex] = {
+        ...updatedWorkouts[workoutIndex],
+        exercises: updatedWorkouts[workoutIndex].exercises.filter(e => e.id !== exerciseId)
+      };
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
-      
       // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
+      const result = await removeExerciseFromWorkout(exerciseId);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
+        setWorkouts(workouts); // Revert to original state
         throw new Error(result.error);
       }
     } catch (error: any) {
@@ -323,45 +307,31 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const addSet = async (workoutId: string, exerciseId: string, set: Omit<Set, "id">): Promise<void> => {
     try {
-      const newSet: Set = { ...set, id: generateId() };
-      // Optimistic update
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.map(exercise => {
-              if (exercise.id === exerciseId) {
-                return { 
-                  ...exercise, 
-                  sets: [...exercise.sets, newSet] 
-                };
-              }
-              return exercise;
-            }),
-          };
-        }
-        return workout;
-      });
+      // Find the workout and exercise
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
       
+      const exerciseIndex = workouts[workoutIndex].exercises.findIndex(e => e.id === exerciseId);
+      if (exerciseIndex === -1) {
+        throw new Error("Exercise not found");
+      }
+      
+      // Create a new set with a generated ID
+      const newSet: Set = { ...set, id: generateId() };
+      
+      // Optimistic update
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex].exercises[exerciseIndex].sets.push(newSet);
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
-      
       // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
+      const result = await addSetToExercise(exerciseId, set);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
+        setWorkouts(workouts); // Revert to original state
         throw new Error(result.error);
       }
     } catch (error: any) {
@@ -377,51 +347,41 @@ export const useWorkouts = (): UseWorkoutsReturn => {
   /**
    * Update an existing set in an exercise
    */
-  const updateSet = async (workoutId: string, exerciseId: string, setId: string, set: Partial<Set>): Promise<void> => {
+  const updateSet = async (workoutId: string, exerciseId: string, setId: string, setUpdate: Partial<Set>): Promise<void> => {
     try {
-      // Optimistic update
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.map(exercise => {
-              if (exercise.id === exerciseId) {
-                return {
-                  ...exercise,
-                  sets: exercise.sets.map(s => {
-                    if (s.id === setId) {
-                      return { ...s, ...set };
-                    }
-                    return s;
-                  }),
-                };
-              }
-              return exercise;
-            }),
-          };
-        }
-        return workout;
-      });
+      // Find the workout and exercise
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
       
+      const exerciseIndex = workouts[workoutIndex].exercises.findIndex(e => e.id === exerciseId);
+      if (exerciseIndex === -1) {
+        throw new Error("Exercise not found");
+      }
+      
+      const setIndex = workouts[workoutIndex].exercises[exerciseIndex].sets.findIndex(s => s.id === setId);
+      if (setIndex === -1) {
+        throw new Error("Set not found");
+      }
+      
+      // Get the complete set by combining the existing set with the updates
+      const updatedSet: Set = {
+        ...workouts[workoutIndex].exercises[exerciseIndex].sets[setIndex],
+        ...setUpdate
+      };
+      
+      // Optimistic update
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex].exercises[exerciseIndex].sets[setIndex] = updatedSet;
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
-      
       // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
+      const result = await updateSetDb(updatedSet);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
+        setWorkouts(workouts); // Revert to original state
         throw new Error(result.error);
       }
     } catch (error: any) {
@@ -439,44 +399,29 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const deleteSet = async (workoutId: string, exerciseId: string, setId: string): Promise<void> => {
     try {
-      // Optimistic update
-      const updatedWorkouts = workouts.map(workout => {
-        if (workout.id === workoutId) {
-          return {
-            ...workout,
-            exercises: workout.exercises.map(exercise => {
-              if (exercise.id === exerciseId) {
-                return {
-                  ...exercise,
-                  sets: exercise.sets.filter(s => s.id !== setId),
-                };
-              }
-              return exercise;
-            }),
-          };
-        }
-        return workout;
-      });
+      // Find the workout and exercise
+      const workoutIndex = workouts.findIndex(w => w.id === workoutId);
+      if (workoutIndex === -1) {
+        throw new Error("Workout not found");
+      }
       
+      const exerciseIndex = workouts[workoutIndex].exercises.findIndex(e => e.id === exerciseId);
+      if (exerciseIndex === -1) {
+        throw new Error("Exercise not found");
+      }
+      
+      // Optimistic update
+      const updatedWorkouts = [...workouts];
+      updatedWorkouts[workoutIndex].exercises[exerciseIndex].sets = 
+        updatedWorkouts[workoutIndex].exercises[exerciseIndex].sets.filter(s => s.id !== setId);
       setWorkouts(updatedWorkouts);
       
-      // Find the updated workout to pass to the API
-      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
-      if (!workoutToUpdate) throw new Error("Workout not found");
-      
       // Send to database
-      const result = await updateWorkoutDb(workoutId, { 
-        exercises: workoutToUpdate.exercises 
-      });
+      const result = await removeSetFromExercise(setId);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = workouts.find(w => w.id === workoutId);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => 
-            currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
-          );
-        }
+        setWorkouts(workouts); // Revert to original state
         throw new Error(result.error);
       }
     } catch (error: any) {

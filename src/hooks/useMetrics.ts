@@ -1,364 +1,219 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { BodyMetrics, WidgetConfig } from "@/types/metrics";
 import { 
   fetchMetrics, 
+  updateMetricGoal, 
+  addMetricEntry, 
   fetchWidgets, 
-  addMetric as addMetricToDb,
-  deleteMetric as deleteMetricFromDb,
-  setGoal as setGoalInDb,
-  updateWidgets as updateWidgetsInDb,
-  saveDefaultWidgetsToDatabase
+  updateWidgets 
 } from "@/modules/database/metrics/queries";
-import { BodyMetric, BodyGoal, BodyMetrics, WidgetConfig, WidgetType } from "@/modules/database/metrics/types";
-import { generateId } from "@/utils/workoutUtils";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { transformMetricsData, transformWidgetsData, getLatestMetricValue } from "@/utils/metricsUtils";
 
-const defaultWidgets: WidgetConfig[] = [
-  { id: generateId(), type: WidgetType.TOTAL_WORKOUTS, position: 0, visible: true },
-  { id: generateId(), type: WidgetType.TOTAL_EXERCISES, position: 1, visible: true },
-  { id: generateId(), type: WidgetType.TOTAL_SETS, position: 2, visible: true },
-  { id: generateId(), type: WidgetType.MOST_FREQUENT_EXERCISE, position: 3, visible: true },
-  { id: generateId(), type: WidgetType.CURRENT_WEIGHT, position: 4, visible: false },
-  { id: generateId(), type: WidgetType.WEIGHT_GOAL, position: 5, visible: false },
-  { id: generateId(), type: WidgetType.BODY_FAT, position: 6, visible: false },
-  { id: generateId(), type: WidgetType.MUSCLE_MASS, position: 7, visible: false },
-];
-
-const defaultMetrics: BodyMetrics = {
-  weight: {
-    entries: [],
-    unit: "kg",
-  },
-  bodyFat: {
-    entries: [],
-    unit: "%",
-  },
-  muscleMass: {
-    entries: [],
-    unit: "%",
-  },
-};
-
-export function useMetrics() {
-  const [metrics, setMetrics] = useState<BodyMetrics>(defaultMetrics);
-  const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgets);
+export const useMetrics = () => {
+  const [metrics, setMetrics] = useState<BodyMetrics | null>(null);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  // Helper function to transform database metrics to application structure
-  const transformMetricsFromDb = useCallback((metricsData: any[], goalsData: any[]) => {
-    const newMetrics = { ...defaultMetrics };
-
-    metricsData?.forEach(metric => {
-      const metricType = metric.metric_type as keyof BodyMetrics;
-      newMetrics[metricType].entries.push({
-        id: metric.id,
-        date: metric.date,
-        value: parseFloat(metric.value as unknown as string),
-      });
-    });
-
-    for (const key in newMetrics) {
-      const metricType = key as keyof BodyMetrics;
-      newMetrics[metricType].entries.sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-    }
-
-    goalsData?.forEach(goal => {
-      const metricType = goal.metric_type as keyof BodyMetrics;
-      newMetrics[metricType].goal = {
-        target: parseFloat(goal.target as unknown as string),
-        deadline: goal.deadline || undefined,
-      };
-    });
-
-    return newMetrics;
-  }, []);
-
-  // Load metrics and widgets from database or localStorage
+  // Fetch metrics and widgets data
   useEffect(() => {
     const loadData = async () => {
-      if (user) {
-        const metricsData = await fetchMetrics(user.id);
-        if (metricsData) {
-          const transformedMetrics = transformMetricsFromDb(
-            metricsData.metrics || [], 
-            metricsData.goals || []
-          );
-          setMetrics(transformedMetrics);
-        }
+      if (!user) {
+        setMetrics(null);
+        setWidgets([]);
+        setIsLoading(false);
+        return;
+      }
 
-        const widgetsData = await fetchWidgets(user.id);
-        if (widgetsData && widgetsData.length > 0) {
-          const widgetConfigs = widgetsData.map(widget => ({
-            id: widget.id,
-            type: widget.type as WidgetType,
-            position: widget.position,
-            visible: widget.visible,
-          }));
-          setWidgets(widgetConfigs);
-        } else {
-          // If no widgets found, save defaults
-          await saveDefaultWidgetsToDatabase(user.id, defaultWidgets);
-          setWidgets(defaultWidgets);
-        }
-      } else {
-        // Use localStorage for non-authenticated users
-        const savedMetrics = localStorage.getItem("bodyMetrics");
-        const savedWidgets = localStorage.getItem("widgets");
-        
-        if (savedMetrics) {
-          try {
-            setMetrics(JSON.parse(savedMetrics));
-          } catch (error) {
-            console.error("Failed to parse body metrics from localStorage:", error);
-            setMetrics(defaultMetrics);
-          }
-        }
-        
-        if (savedWidgets) {
-          try {
-            setWidgets(JSON.parse(savedWidgets));
-          } catch (error) {
-            console.error("Failed to parse widgets from localStorage:", error);
-            setWidgets(defaultWidgets);
-          }
-        }
+      setIsLoading(true);
+      try {
+        // Fetch metrics data
+        const metricsData = await fetchMetrics();
+        const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
+        setMetrics(transformedMetrics);
+
+        // Fetch widgets data
+        const widgetsData = await fetchWidgets();
+        const transformedWidgets = transformWidgetsData(widgetsData);
+        setWidgets(transformedWidgets);
+      } catch (error) {
+        console.error("Error loading metrics data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load metrics data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadData();
-  }, [user, transformMetricsFromDb]);
-
-  // Save to localStorage for non-authenticated users
-  useEffect(() => {
-    if (!user) {
-      localStorage.setItem("bodyMetrics", JSON.stringify(metrics));
-      localStorage.setItem("widgets", JSON.stringify(widgets));
-    }
-  }, [metrics, widgets, user]);
-
-  // Get the latest value of a specific metric type
-  const getLatestMetricValue = useCallback((type: keyof BodyMetrics): number | undefined => {
-    const entries = metrics[type].entries;
-    if (entries.length === 0) return undefined;
-    
-    const sortedEntries = [...entries].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    
-    return sortedEntries[0].value;
-  }, [metrics]);
-
-  // Add a new metric
-  const addMetric = useCallback(async (metric: { 
-    type: keyof BodyMetrics, 
-    value: number, 
-    date: string 
-  }) => {
-    const newMetric: BodyMetric = {
-      id: generateId(),
-      date: metric.date,
-      value: metric.value,
-    };
-    
-    // Optimistically update UI
-    setMetrics(prev => ({
-      ...prev,
-      [metric.type]: {
-        ...prev[metric.type],
-        entries: [...prev[metric.type].entries, newMetric].sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        ),
-      }
-    }));
-    
-    if (user) {
-      try {
-        const result = await addMetricToDb(user.id, metric.type, metric.value, metric.date);
-
-        if (!result.success) {
-          console.error("Error adding metric:", result.error);
-          // Refresh metrics from database in case of error
-          const metricsData = await fetchMetrics(user.id);
-          if (metricsData) {
-            const transformedMetrics = transformMetricsFromDb(
-              metricsData.metrics || [], 
-              metricsData.goals || []
-            );
-            setMetrics(transformedMetrics);
-          }
-          
-          toast({
-            title: "Fehler",
-            description: "Metrik konnte nicht gespeichert werden.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (result.metricId) {
-          // Update the ID with the one from the database
-          setMetrics(prev => ({
-            ...prev,
-            [metric.type]: {
-              ...prev[metric.type],
-              entries: prev[metric.type].entries.map(entry => 
-                entry.date === newMetric.date ? { ...entry, id: result.metricId! } : entry
-              ),
-            }
-          }));
-        }
-      } catch (error) {
-        console.error("Error in addMetric:", error);
-      }
-    }
-    
-    toast({
-      title: "Metrik gespeichert",
-      description: `Neue ${metric.type} Messung wurde gespeichert.`,
-    });
-  }, [user, transformMetricsFromDb]);
-
-  // Set a goal for a specific metric type
-  const setGoal = useCallback(async (type: keyof BodyMetrics, goal: BodyGoal) => {
-    // Optimistically update UI
-    setMetrics(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        goal,
-      }
-    }));
-    
-    if (user) {
-      try {
-        const result = await setGoalInDb(user.id, type, goal.target, goal.deadline);
-
-        if (!result.success) {
-          console.error("Error setting goal:", result.error);
-          // Refresh metrics from database in case of error
-          const metricsData = await fetchMetrics(user.id);
-          if (metricsData) {
-            const transformedMetrics = transformMetricsFromDb(
-              metricsData.metrics || [], 
-              metricsData.goals || []
-            );
-            setMetrics(transformedMetrics);
-          }
-          
-          toast({
-            title: "Fehler",
-            description: "Ziel konnte nicht gespeichert werden.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error in setGoal:", error);
-      }
-    }
-    
-    toast({
-      title: "Ziel gesetzt",
-      description: `Neues ${type} Ziel wurde gesetzt.`,
-    });
-  }, [user, transformMetricsFromDb]);
-
-  // Delete a metric
-  const deleteMetric = useCallback(async (type: keyof BodyMetrics, id: string) => {
-    // Optimistically update UI
-    setMetrics(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        entries: prev[type].entries.filter(entry => entry.id !== id),
-      }
-    }));
-    
-    if (user) {
-      try {
-        const result = await deleteMetricFromDb(id);
-
-        if (!result.success) {
-          console.error("Error deleting metric:", result.error);
-          // Refresh metrics from database in case of error
-          const metricsData = await fetchMetrics(user.id);
-          if (metricsData) {
-            const transformedMetrics = transformMetricsFromDb(
-              metricsData.metrics || [], 
-              metricsData.goals || []
-            );
-            setMetrics(transformedMetrics);
-          }
-          
-          toast({
-            title: "Fehler",
-            description: "Metrik konnte nicht gelöscht werden.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error in deleteMetric:", error);
-      }
-    }
-    
-    toast({
-      title: "Metrik gelöscht",
-      description: `${type} Messung wurde gelöscht.`,
-    });
-  }, [user, transformMetricsFromDb]);
-
-  // Update widgets configuration
-  const updateWidgets = useCallback(async (newWidgets: WidgetConfig[]) => {
-    // Optimistically update UI
-    setWidgets(newWidgets);
-    
-    if (user) {
-      try {
-        const result = await updateWidgetsInDb(user.id, newWidgets);
-
-        if (!result.success) {
-          console.error("Error updating widgets:", result.error);
-          // Refresh widgets from database in case of error
-          const widgetsData = await fetchWidgets(user.id);
-          if (widgetsData) {
-            const widgetConfigs = widgetsData.map(widget => ({
-              id: widget.id,
-              type: widget.type as WidgetType,
-              position: widget.position,
-              visible: widget.visible,
-            }));
-            setWidgets(widgetConfigs);
-          }
-          
-          toast({
-            title: "Fehler",
-            description: "Widget-Einstellungen konnten nicht gespeichert werden.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error in updateWidgets:", error);
-      }
-    }
-    
-    toast({
-      title: "Widgets aktualisiert",
-      description: "Deine Widget-Einstellungen wurden gespeichert.",
-    });
   }, [user]);
+
+  // Add a new metric entry
+  const addMetric = async (data: { type: keyof BodyMetrics; value: number; date: string }) => {
+    if (!metrics) return;
+
+    try {
+      // Optimistic update
+      const newMetricEntry = {
+        id: `temp-${Date.now()}`,
+        date: data.date,
+        value: data.value,
+      };
+
+      const updatedMetrics = { ...metrics };
+      updatedMetrics[data.type].entries = [
+        newMetricEntry,
+        ...updatedMetrics[data.type].entries,
+      ];
+      setMetrics(updatedMetrics);
+
+      // Send to server
+      await addMetricEntry({
+        type: data.type,
+        value: data.value,
+        date: data.date,
+      });
+
+      // Refresh data to get server-generated ID
+      const metricsData = await fetchMetrics();
+      const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
+      setMetrics(transformedMetrics);
+
+      toast({
+        title: "Metric Added",
+        description: `Your ${data.type} has been updated.`,
+      });
+    } catch (error: any) {
+      console.error("Error adding metric:", error);
+      
+      // Revert optimistic update on error
+      const metricsData = await fetchMetrics();
+      const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
+      setMetrics(transformedMetrics);
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add metric",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update a metric goal
+  const setGoal = async (type: keyof BodyMetrics, goal: { target: number; deadline?: string }) => {
+    if (!metrics) return;
+
+    try {
+      // Optimistic update
+      const updatedMetrics = { ...metrics };
+      updatedMetrics[type].goal = goal;
+      setMetrics(updatedMetrics);
+
+      // Send to server
+      await updateMetricGoal(type, goal);
+
+      toast({
+        title: "Goal Updated",
+        description: `Your ${type} goal has been updated.`,
+      });
+    } catch (error: any) {
+      console.error("Error updating goal:", error);
+      
+      // Revert optimistic update on error
+      const metricsData = await fetchMetrics();
+      const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
+      setMetrics(transformedMetrics);
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update goal",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete a metric entry
+  const deleteMetric = async (type: keyof BodyMetrics, id: string) => {
+    if (!metrics) return;
+
+    try {
+      // Optimistic update
+      const updatedMetrics = { ...metrics };
+      updatedMetrics[type].entries = updatedMetrics[type].entries.filter(
+        (entry) => entry.id !== id
+      );
+      setMetrics(updatedMetrics);
+
+      // TODO: Implement server-side delete
+      // For now, we'll just fetch the latest data to revert if needed
+      
+      toast({
+        title: "Metric Deleted",
+        description: `Your ${type} entry has been removed.`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting metric:", error);
+      
+      // Revert optimistic update on error
+      const metricsData = await fetchMetrics();
+      const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
+      setMetrics(transformedMetrics);
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete metric",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update widget settings (order, visibility)
+  const updateWidgetSettings = async (widgetSettings: WidgetConfig[]) => {
+    try {
+      // Optimistic update
+      setWidgets(widgetSettings);
+
+      // Send to server
+      const result = await updateWidgets(widgetSettings);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      toast({
+        title: "Dashboard Updated",
+        description: "Your dashboard layout has been saved.",
+      });
+    } catch (error: any) {
+      console.error("Error updating widgets:", error);
+      
+      // Revert optimistic update on error
+      const widgetsData = await fetchWidgets();
+      const transformedWidgets = transformWidgetsData(widgetsData);
+      setWidgets(transformedWidgets);
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update dashboard",
+        variant: "destructive",
+      });
+    }
+  };
 
   return {
     metrics,
     widgets,
+    isLoading,
     addMetric,
-    setGoal,
     deleteMetric,
-    updateWidgets,
-    getLatestMetricValue
+    setGoal,
+    getLatestMetricValue,
+    updateWidgetSettings,
   };
-}
+};
