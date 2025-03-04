@@ -17,13 +17,23 @@ export const useMetrics = () => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  // Fetch metrics and widgets data
+  // Fetch metrics and widgets data when auth state changes
   useEffect(() => {
+    // Don't try to fetch data until we know auth state
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      // Reset error state on each load attempt
+      setError(null);
+      setIsLoading(true);
+      
+      // Initialize with empty data if no user
       if (!user) {
-        // If no user, initialize with empty data
+        console.log("No authenticated user, initializing with empty metrics data");
         const emptyMetrics = transformMetricsData([], []);
         const defaultWidgets = transformWidgetsData([]);
         
@@ -33,10 +43,9 @@ export const useMetrics = () => {
         return;
       }
 
-      setIsLoading(true);
-      setError(null);
-      
       try {
+        console.log("Fetching metrics data for user:", user.id);
+        
         // Fetch metrics data
         const metricsData = await fetchMetrics();
         const transformedMetrics = transformMetricsData(metricsData.metrics, metricsData.goals);
@@ -46,11 +55,13 @@ export const useMetrics = () => {
         const widgetsData = await fetchWidgets();
         const transformedWidgets = transformWidgetsData(widgetsData);
         setWidgets(transformedWidgets);
+        
+        console.log("Successfully loaded metrics data");
       } catch (err: any) {
         console.error("Error loading metrics data:", err);
-        setError(err);
+        setError(err instanceof Error ? err : new Error(err?.message || "Failed to load metrics data"));
         
-        // Still initialize with empty data on error
+        // Still initialize with empty data on error to prevent UI crashes
         const emptyMetrics = transformMetricsData([], []);
         const defaultWidgets = transformWidgetsData([]);
         
@@ -59,7 +70,7 @@ export const useMetrics = () => {
         
         toast({
           title: "Error",
-          description: "Failed to load metrics data",
+          description: "Failed to load metrics data: " + (err?.message || "Unknown error"),
           variant: "destructive",
         });
       } finally {
@@ -68,11 +79,19 @@ export const useMetrics = () => {
     };
 
     loadData();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Add a new metric entry
   const addMetric = async (data: { type: keyof BodyMetrics; value: number; date: string }) => {
     if (!metrics) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to add metrics",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Optimistic update
@@ -124,6 +143,14 @@ export const useMetrics = () => {
   // Update a metric goal
   const setGoal = async (type: keyof BodyMetrics, goal: { target: number; deadline?: string }) => {
     if (!metrics) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to set goals",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Optimistic update
@@ -157,6 +184,14 @@ export const useMetrics = () => {
   // Delete a metric entry
   const deleteMetric = async (type: keyof BodyMetrics, id: string) => {
     if (!metrics) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to delete metrics",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Optimistic update
@@ -191,6 +226,15 @@ export const useMetrics = () => {
 
   // Update widget settings (order, visibility)
   const updateWidgetSettings = async (widgetSettings: WidgetConfig[]) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to update dashboard settings",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // Optimistic update
       setWidgets(widgetSettings);
