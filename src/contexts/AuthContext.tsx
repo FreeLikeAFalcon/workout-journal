@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -34,7 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isEmailConfirmed, setIsEmailConfirmed] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -47,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
@@ -106,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Check if email is confirmed
       if (data.user && !data.user.email_confirmed_at) {
         setIsEmailConfirmed(false);
         toast({
@@ -134,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      // Get the current URL to use as the redirect URL
       const redirectUrl = window.location.origin + '/auth?tab=login';
       
       const { error } = await supabase.auth.signUp({
@@ -175,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      // Make sure we use the full URL including origin for the redirectTo
       const fullRedirectUrl = new URL(redirectTo, window.location.origin).toString();
       
       console.log("Sending password reset with redirect to:", fullRedirectUrl);

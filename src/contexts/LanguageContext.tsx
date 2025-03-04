@@ -1,10 +1,9 @@
 
-import React, { createContext, useContext } from "react";
-import { useTranslation } from "react-i18next";
+import React, { createContext, useContext, useState } from "react";
 import i18n from "@/integrations/i18n";
 
 type LanguageContextType = {
-  t: (key: keyof typeof translations.en) => string;
+  t: (key: string) => string;
   i18n: typeof i18n;
 };
 
@@ -15,7 +14,11 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { t } = useTranslation();
+  // Simple translation function
+  const t = (key: string): string => {
+    const currentLanguage = i18n.language as keyof typeof translations;
+    return translations[currentLanguage]?.[key as keyof (typeof translations)[typeof currentLanguage]] || key;
+  };
 
   return (
     <LanguageContext.Provider value={{ t, i18n }}>
@@ -32,7 +35,7 @@ export const useLanguage = () => {
   return context;
 };
 
-// Update the 'en' translations
+// Define translations
 const translations = {
   en: {
     dashboard: "Dashboard",
@@ -59,7 +62,6 @@ const translations = {
     "username.placeholder": "Your Username",
     "please.fill.all.fields": "Please fill in all fields.",
     "password.too.short": "Password must be at least 6 characters.",
-    success: "Success",
     "registration.successful": "Registration successful!",
     "registration.failed": "Registration failed.",
     "logging.in": "Logging in...",
@@ -76,8 +78,6 @@ const translations = {
     "reset.password.failed": "Failed to send reset password email.",
     "please.enter.email": "Please enter your email address.",
     profileInformation: "Profile Information",
-    username: "Username",
-    email: "Email",
     weight: "Weight",
     notSet: "Not set",
     editProfile: "Edit Profile",
@@ -88,7 +88,6 @@ const translations = {
     errorUpdatingProfile: "There was an error updating your profile.",
     usernameMinLength: "Username must be at least 3 characters",
     save: "Save",
-    password: "Password",
     currentPassword: "Current Password",
     newPassword: "New Password",
     confirmPassword: "Confirm Password",
@@ -102,6 +101,15 @@ const translations = {
     enterEmail: "Enter your email",
     emailVerificationNeeded: "Email Verification Required",
     emailVerificationNeededDesc: "Please check your inbox to verify your new email address.",
+    deleteAccount: "Delete Account",
+    deleteAccountConfirm: "Confirm Account Deletion",
+    deleteAccountWarning: "This action cannot be undone. Your account and all associated data will be permanently deleted.",
+    enterPasswordToConfirm: "Enter your password to confirm deletion",
+    cancel: "Cancel",
+    delete: "Delete",
+    accountDeleted: "Account Deleted",
+    accountDeletedDesc: "Your account has been successfully deleted.",
+    errorDeletingAccount: "There was an error deleting your account."
   },
   de: {
     dashboard: "Dashboard",
@@ -128,7 +136,6 @@ const translations = {
     "username.placeholder": "Dein Benutzername",
     "please.fill.all.fields": "Bitte fülle alle Felder aus.",
     "password.too.short": "Das Passwort muss mindestens 6 Zeichen lang sein.",
-    success: "Erfolg",
     "registration.successful": "Registrierung erfolgreich!",
     "registration.failed": "Registrierung fehlgeschlagen.",
     "logging.in": "Anmelden...",
@@ -146,8 +153,6 @@ const translations = {
       "Das Senden der E-Mail zum Zurücksetzen des Passworts ist fehlgeschlagen.",
     "please.enter.email": "Bitte gib deine E-Mail-Adresse ein.",
     profileInformation: "Profilinformationen",
-    username: "Benutzername",
-    email: "E-Mail",
     weight: "Gewicht",
     notSet: "Nicht gesetzt",
     editProfile: "Profil bearbeiten",
@@ -155,11 +160,9 @@ const translations = {
     enterWeight: "Gib dein Gewicht ein",
     profileUpdated: "Profil aktualisiert",
     profileUpdatedDesc: "Dein Profil wurde erfolgreich aktualisiert.",
-    errorUpdatingProfile:
-      "Beim Aktualisieren deines Profils ist ein Fehler aufgetreten.",
+    errorUpdatingProfile: "Beim Aktualisieren deines Profils ist ein Fehler aufgetreten.",
     usernameMinLength: "Der Benutzername muss mindestens 3 Zeichen lang sein",
     save: "Speichern",
-    password: "Passwort",
     currentPassword: "Aktuelles Passwort",
     newPassword: "Neues Passwort",
     confirmPassword: "Passwort bestätigen",
@@ -173,5 +176,14 @@ const translations = {
     enterEmail: "E-Mail-Adresse eingeben",
     emailVerificationNeeded: "E-Mail-Bestätigung erforderlich",
     emailVerificationNeededDesc: "Bitte überprüfe deinen Posteingang, um deine neue E-Mail-Adresse zu bestätigen.",
-  },
+    deleteAccount: "Konto löschen",
+    deleteAccountConfirm: "Kontolöschung bestätigen",
+    deleteAccountWarning: "Diese Aktion kann nicht rückgängig gemacht werden. Dein Konto und alle zugehörigen Daten werden dauerhaft gelöscht.",
+    enterPasswordToConfirm: "Gib dein Passwort ein, um die Löschung zu bestätigen",
+    cancel: "Abbrechen",
+    delete: "Löschen",
+    accountDeleted: "Konto gelöscht",
+    accountDeletedDesc: "Dein Konto wurde erfolgreich gelöscht.",
+    errorDeletingAccount: "Beim Löschen deines Kontos ist ein Fehler aufgetreten."
+  }
 } as const;

@@ -13,8 +13,20 @@ import { useMetrics } from "@/contexts/MetricsContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -31,11 +43,14 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   onOpenChange,
   initialData 
 }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { t } = useLanguage();
   const { addMetric } = useMetrics();
   const [activeTab, setActiveTab] = useState<string>("profile");
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
   
   // Create profile form schema
   const profileFormSchema = z.object({
@@ -158,6 +173,51 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmPassword) {
+      toast({
+        title: t('error'),
+        description: t('please.fill.all.fields'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setError(null);
+
+      // Delete all user data
+      const { error: deleteError } = await supabase.rpc('delete_user', {
+        user_password: deleteConfirmPassword
+      });
+
+      if (deleteError) throw deleteError;
+      
+      toast({
+        title: t('accountDeleted'),
+        description: t('accountDeletedDesc'),
+      });
+      
+      // Sign out the user
+      await signOut();
+      
+      // Navigate to the welcome page
+      navigate('/');
+      
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      setError(error.message || t('errorDeletingAccount'));
+      toast({
+        title: t('error'),
+        description: error.message || t('errorDeletingAccount'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -166,9 +226,10 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         </DialogHeader>
         
         <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">{t('profile')}</TabsTrigger>
             <TabsTrigger value="password">{t('password')}</TabsTrigger>
+            <TabsTrigger value="danger" className="text-destructive">{t('deleteAccount')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="space-y-4 py-4">
@@ -295,6 +356,66 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                 </DialogFooter>
               </form>
             </Form>
+          </TabsContent>
+          
+          <TabsContent value="danger" className="space-y-4 py-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {t('deleteAccountWarning')}
+                </AlertDescription>
+              </Alert>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('deleteAccount')}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t('deleteAccountConfirm')}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t('deleteAccountWarning')}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  
+                  <div className="py-4">
+                    <FormLabel>{t('enterPasswordToConfirm')}</FormLabel>
+                    <Input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={deleteConfirmPassword}
+                      onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                  
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteAccount();
+                      }}
+                      disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? t('pleaseWait') : t('delete')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
