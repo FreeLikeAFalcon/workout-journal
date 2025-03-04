@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { BodyMetric, BodyGoal, BodyMetrics, WidgetConfig, WidgetType } from "@/types/metrics";
 import { generateId } from "@/utils/workoutUtils";
@@ -9,10 +8,11 @@ import { useAuth } from "@/contexts/AuthContext";
 interface MetricsContextType {
   metrics: BodyMetrics;
   widgets: WidgetConfig[];
-  addMetric: (type: keyof BodyMetrics, value: number) => void;
+  addMetric: (metric: { type: keyof BodyMetrics, value: number, date: string }) => Promise<void>;
   setGoal: (type: keyof BodyMetrics, goal: BodyGoal) => void;
   deleteMetric: (type: keyof BodyMetrics, id: string) => void;
   updateWidgets: (widgets: WidgetConfig[]) => void;
+  getLatestMetricValue: (type: keyof BodyMetrics) => number | undefined;
 }
 
 const defaultWidgets: WidgetConfig[] = [
@@ -48,13 +48,11 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgets);
   const { user } = useAuth();
 
-  // Load metrics and widget config when user logs in
   useEffect(() => {
     if (user) {
       fetchMetrics();
       fetchWidgets();
     } else {
-      // If no user is logged in, use localStorage as fallback
       const savedMetrics = localStorage.getItem("bodyMetrics");
       const savedWidgets = localStorage.getItem("widgets");
       
@@ -78,7 +76,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [user]);
 
-  // Save metrics and widgets to localStorage as fallback when not logged in
   useEffect(() => {
     if (!user) {
       localStorage.setItem("bodyMetrics", JSON.stringify(metrics));
@@ -88,7 +85,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchMetrics = async () => {
     try {
-      // Fetch metrics
       const { data: metricsData, error: metricsError } = await supabase
         .from('body_metrics')
         .select('*')
@@ -99,7 +95,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      // Fetch goals
       const { data: goalsData, error: goalsError } = await supabase
         .from('body_goals')
         .select('*')
@@ -110,7 +105,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      // Convert database data to application format
       const newMetrics = { ...defaultMetrics };
 
       metricsData?.forEach(metric => {
@@ -122,7 +116,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       });
 
-      // Sort entries by date
       for (const key in newMetrics) {
         const metricType = key as keyof BodyMetrics;
         newMetrics[metricType].entries.sort(
@@ -130,7 +123,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         );
       }
 
-      // Add goals
       goalsData?.forEach(goal => {
         const metricType = goal.metric_type as keyof BodyMetrics;
         newMetrics[metricType].goal = {
@@ -166,7 +158,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
         setWidgets(widgetConfigs);
       } else {
-        // If no widgets found in database, create defaults
         saveDefaultWidgetsToDatabase();
       }
     } catch (error) {
@@ -192,48 +183,56 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (error) {
         console.error("Error saving default widgets:", error);
       } else {
-        fetchWidgets(); // Fetch newly created widgets with their database IDs
+        fetchWidgets();
       }
     } catch (error) {
       console.error("Error in saveDefaultWidgetsToDatabase:", error);
     }
   };
 
-  const addMetric = async (type: keyof BodyMetrics, value: number) => {
+  const getLatestMetricValue = (type: keyof BodyMetrics): number | undefined => {
+    const entries = metrics[type].entries;
+    if (entries.length === 0) return undefined;
+    
+    const sortedEntries = [...entries].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    return sortedEntries[0].value;
+  };
+
+  const addMetric = async (metric: { type: keyof BodyMetrics, value: number, date: string }) => {
     const newMetric: BodyMetric = {
-      id: generateId(), // Temporary ID
-      date: new Date().toISOString(),
-      value,
+      id: generateId(),
+      date: metric.date,
+      value: metric.value,
     };
     
-    // Update local state first for immediate UI feedback
     setMetrics(prev => ({
       ...prev,
-      [type]: {
-        ...prev[type],
-        entries: [...prev[type].entries, newMetric].sort(
+      [metric.type]: {
+        ...prev[metric.type],
+        entries: [...prev[metric.type].entries, newMetric].sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         ),
       }
     }));
     
-    // If user is logged in, save to database
     if (user) {
       try {
         const { data, error } = await supabase
           .from('body_metrics')
           .insert({
             user_id: user.id,
-            metric_type: type,
-            value: value, // Supabase handles number to string conversion
-            date: newMetric.date,
+            metric_type: metric.type,
+            value: metric.value,
+            date: metric.date,
           })
           .select()
           .single();
 
         if (error) {
           console.error("Error adding metric:", error);
-          // Revert state change if save fails
           fetchMetrics();
           toast({
             title: "Fehler",
@@ -243,13 +242,12 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return;
         }
 
-        // Update with the real database ID
         if (data) {
           setMetrics(prev => ({
             ...prev,
-            [type]: {
-              ...prev[type],
-              entries: prev[type].entries.map(entry => 
+            [metric.type]: {
+              ...prev[metric.type],
+              entries: prev[metric.type].entries.map(entry => 
                 entry.date === newMetric.date ? { ...entry, id: data.id } : entry
               ),
             }
@@ -262,12 +260,11 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     toast({
       title: "Metrik gespeichert",
-      description: `Neue ${type} Messung wurde gespeichert.`,
+      description: `Neue ${metric.type} Messung wurde gespeichert.`,
     });
   };
 
   const setGoal = async (type: keyof BodyMetrics, goal: BodyGoal) => {
-    // Update local state first
     setMetrics(prev => ({
       ...prev,
       [type]: {
@@ -276,10 +273,8 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }));
     
-    // If user is logged in, save to database
     if (user) {
       try {
-        // Check if a goal already exists for this metric type
         const { data: existingGoal } = await supabase
           .from('body_goals')
           .select('*')
@@ -290,22 +285,20 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         let operation;
         
         if (existingGoal) {
-          // Update existing goal
           operation = supabase
             .from('body_goals')
             .update({
-              target: goal.target, // Supabase handles number to string conversion
+              target: goal.target,
               deadline: goal.deadline || null,
             })
             .eq('id', existingGoal.id);
         } else {
-          // Insert new goal
           operation = supabase
             .from('body_goals')
             .insert({
               user_id: user.id,
               metric_type: type,
-              target: goal.target, // Supabase handles number to string conversion
+              target: goal.target,
               deadline: goal.deadline || null,
             });
         }
@@ -314,7 +307,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error setting goal:", error);
-          // Revert state change if save fails
           fetchMetrics();
           toast({
             title: "Fehler",
@@ -335,7 +327,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteMetric = async (type: keyof BodyMetrics, id: string) => {
-    // Update local state first
     setMetrics(prev => ({
       ...prev,
       [type]: {
@@ -344,7 +335,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }));
     
-    // If user is logged in, delete from database
     if (user) {
       try {
         const { error } = await supabase
@@ -354,7 +344,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error deleting metric:", error);
-          // Revert state change if delete fails
           fetchMetrics();
           toast({
             title: "Fehler",
@@ -375,13 +364,10 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateWidgets = async (newWidgets: WidgetConfig[]) => {
-    // Update local state first
     setWidgets(newWidgets);
     
-    // If user is logged in, update in database
     if (user) {
       try {
-        // Delete all existing widgets for this user
         const { error: deleteError } = await supabase
           .from('widget_configs')
           .delete()
@@ -392,7 +378,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return;
         }
 
-        // Insert new widget configurations
         const widgetsToInsert = newWidgets.map(widget => ({
           user_id: user.id,
           type: widget.type,
@@ -406,7 +391,6 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (insertError) {
           console.error("Error updating widgets:", insertError);
-          // Revert state change if save fails
           fetchWidgets();
           toast({
             title: "Fehler",
@@ -435,6 +419,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setGoal,
         deleteMetric,
         updateWidgets,
+        getLatestMetricValue
       }}
     >
       {children}
