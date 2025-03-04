@@ -25,6 +25,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const {
     workouts,
     isLoading,
+    error: workoutsError,
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout: updateWorkoutHook,
@@ -79,13 +80,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
-  // Added error property with default value null
-  const error = null;
-  
   const workoutManager: WorkoutContextType = {
     workouts,
     isLoading,
-    error,
+    error: workoutsError,
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout,

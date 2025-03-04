@@ -17,15 +17,26 @@ import { WidgetType } from "@/types/metrics";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ChartData } from "@/types/workout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Index: React.FC = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const { workouts, isLoading: workoutsLoading, error: workoutsError } = useWorkout();
   const { widgets, isLoading: metricsLoading, error: metricsError } = useMetrics();
   const [isCustomizing, setIsCustomizing] = useState(false);
   const { t } = useLanguage();
   
-  const isLoading = workoutsLoading || metricsLoading;
+  const isLoading = workoutsLoading || metricsLoading || authLoading;
   const hasError = workoutsError || metricsError;
+  
+  // If not logged in, redirect to welcome page
+  React.useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/welcome");
+    }
+  }, [user, authLoading, navigate]);
   
   // Only calculate stats if workouts are loaded and no errors
   const stats = !workoutsLoading && !workoutsError ? calculateWorkoutStats(workouts) : {
