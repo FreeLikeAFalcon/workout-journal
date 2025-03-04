@@ -1,5 +1,5 @@
 
-import { Dumbbell, LogOut, User } from "lucide-react";
+import { Dumbbell, LogOut, User, LayoutDashboard } from "lucide-react";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,10 @@ const Navbar: React.FC = () => {
     navigate("/auth");
   };
 
+  const navigateToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   const getUserInitials = () => {
     if (profile?.username) {
       return profile.username.substring(0, 2).toUpperCase();
@@ -39,7 +43,10 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="glass-card sticky top-4 z-50 rounded-xl backdrop-blur-lg border border-white/20 flex items-center justify-between p-4 mb-8 animate-fade-in">
-      <div className="flex items-center gap-2">
+      <div 
+        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+        onClick={navigateToDashboard}
+      >
         <Dumbbell size={22} className="text-accent" />
         <span className="font-display text-xl font-semibold">WOD-Tracker</span>
       </div>
@@ -68,6 +75,10 @@ const Navbar: React.FC = () => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/dashboard")}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>{t('dashboard')}</span>
+              </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
                 <User className="mr-2 h-4 w-4" />
                 <span>{t('profile')}</span>

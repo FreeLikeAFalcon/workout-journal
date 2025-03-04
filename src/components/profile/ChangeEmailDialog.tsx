@@ -1,12 +1,12 @@
 
 import React from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
@@ -17,75 +17,70 @@ interface ChangeEmailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({ 
-  open, 
-  onOpenChange,
-}) => {
-  const { user, signOut } = useAuth();
+const formSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({ open, onOpenChange }) => {
   const { t } = useLanguage();
   
-  // Create form schema
-  const formSchema = z.object({
-    email: z.string().email(t('invalidEmail')),
-    password: z.string().min(6, t('passwordMinLength')),
-  });
-
-  // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: user?.email || '',
+      email: '',
       password: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const { error } = await supabase.auth.updateUser(
-        { email: values.email },
-        { password: values.password }
-      );
-          
+      // First verify the password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: supabase.auth.getUser().then(res => res.data.user?.email || ''),
+        password: values.password,
+      });
+      
+      if (signInError) throw signInError;
+      
+      // Then update the email - don't pass password here as it's not part of emailRedirectTo schema
+      const { error } = await supabase.auth.updateUser({
+        email: values.email,
+      });
+      
       if (error) throw error;
       
       toast({
-        title: t('emailUpdateRequested'),
-        description: t('checkInboxForConfirmation'),
+        title: t('email.changeSuccess'),
+        description: t('email.verificationSent'),
       });
-      
-      // Close dialog after successful submission
       onOpenChange(false);
-      
-      // Sign out user after email change request
-      await signOut();
-      
     } catch (error: any) {
-      console.error("Error updating email:", error);
       toast({
-        title: t('error'),
-        description: error.message || t('errorUpdatingEmail'),
         variant: "destructive",
+        title: t('error'),
+        description: error.message,
       });
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('changeEmail')}</DialogTitle>
+          <DialogTitle>{t('email.change')}</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('newEmail')}</FormLabel>
+                  <FormLabel>{t('email.new')}</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder={t('enterNewEmail')} {...field} />
+                    <Input placeholder="email@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -97,21 +92,22 @@ const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('currentPassword')}</FormLabel>
+                  <FormLabel>{t('password.current')}</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder={t('enterCurrentPassword')} 
-                      {...field}
-                    />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            <DialogFooter className="pt-4">
-              <Button type="submit">{t('changeEmail')}</Button>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t('cancel')}
+              </Button>
+              <Button type="submit">
+                {t('update')}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
