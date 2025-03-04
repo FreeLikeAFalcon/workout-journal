@@ -2,9 +2,13 @@
 import React, { createContext, useContext, useState } from "react";
 import i18n from "@/integrations/i18n";
 
+export type Language = 'en' | 'de';
+
 type LanguageContextType = {
   t: (key: string) => string;
   i18n: typeof i18n;
+  language: Language;
+  setLanguage: (language: Language) => void;
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
@@ -14,14 +18,28 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [language, setLanguage] = useState<Language>(i18n.language as Language);
+
+  // Function to change the language
+  const changeLanguage = (lng: Language) => {
+    i18n.changeLanguage(lng).then(() => {
+      setLanguage(lng);
+    });
+  };
+  
   // Simple translation function
   const t = (key: string): string => {
-    const currentLanguage = i18n.language as keyof typeof translations;
+    const currentLanguage = language as keyof typeof translations;
     return translations[currentLanguage]?.[key as keyof (typeof translations)[typeof currentLanguage]] || key;
   };
 
   return (
-    <LanguageContext.Provider value={{ t, i18n }}>
+    <LanguageContext.Provider value={{ 
+      t, 
+      i18n, 
+      language, 
+      setLanguage: changeLanguage 
+    }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -109,7 +127,11 @@ const translations = {
     delete: "Delete",
     accountDeleted: "Account Deleted",
     accountDeletedDesc: "Your account has been successfully deleted.",
-    errorDeletingAccount: "There was an error deleting your account."
+    errorDeletingAccount: "There was an error deleting your account.",
+    journey: "Your Fitness Journey",
+    myAccount: "My Account",
+    signOut: "Sign Out",
+    signIn: "Sign In"
   },
   de: {
     dashboard: "Dashboard",
@@ -184,6 +206,10 @@ const translations = {
     delete: "Löschen",
     accountDeleted: "Konto gelöscht",
     accountDeletedDesc: "Dein Konto wurde erfolgreich gelöscht.",
-    errorDeletingAccount: "Beim Löschen deines Kontos ist ein Fehler aufgetreten."
+    errorDeletingAccount: "Beim Löschen deines Kontos ist ein Fehler aufgetreten.",
+    journey: "Deine Fitness-Reise",
+    myAccount: "Mein Konto",
+    signOut: "Abmelden",
+    signIn: "Anmelden"
   }
 } as const;
