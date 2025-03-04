@@ -49,7 +49,12 @@ const MetricsForm: React.FC = () => {
     e.preventDefault();
     
     if (metricValue !== "" && !isGoalMode) {
-      addMetric(activeTab, Number(metricValue));
+      // Fix the addMetric call to match the expected signature from MetricsContext
+      addMetric({
+        type: activeTab,
+        value: Number(metricValue),
+        date: new Date().toISOString()
+      });
       setMetricValue("");
       setIsFormVisible(false);
     } else if (goalValue !== "" && isGoalMode) {
