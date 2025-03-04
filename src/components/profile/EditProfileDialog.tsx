@@ -285,6 +285,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                             const value = e.target.value;
                             field.onChange(value ? parseFloat(value) : undefined);
                           }}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                       <FormMessage />
