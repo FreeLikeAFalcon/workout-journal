@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -9,13 +9,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartData } from "@/modules/database/workouts/types";
+import { ChartData } from "@/types/workout";
 import { formatDate, lbsToKg } from "@/utils/workoutUtils";
-import { LineChart, TrendingUp, Minus, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, LineChart, TrendingUp, Minus, Plus } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-import ExerciseSelector from "./ExerciseSelector";
 
 interface ProgressChartProps {
   chartData: ChartData;
@@ -23,14 +21,14 @@ interface ProgressChartProps {
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { t } = useLanguage();
 
   // Get list of available exercises
   const exercises = Object.keys(chartData);
 
   // If no exercise is selected yet and we have exercises, select the first one
-  useEffect(() => {
+  React.useEffect(() => {
     if (!selectedExercise && exercises.length > 0) {
       setSelectedExercise(exercises[0]);
     }
@@ -68,7 +66,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
                 variant="ghost" 
                 size="icon" 
                 className="hover:bg-secondary/50 transition-colors"
-                aria-label={isCollapsed ? t('expandChart') : t('collapseChart')}
+                aria-label={isCollapsed ? "Expand chart" : "Collapse chart"}
               >
                 {isCollapsed ? (
                   <Plus size={18} className="text-muted-foreground" />
@@ -78,18 +76,41 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
               </Button>
             </CollapsibleTrigger>
             <TrendingUp size={20} className="text-accent" />
-            <h3 className="text-lg font-semibold">{t('progressTracking')}</h3>
+            <h3 className="text-lg font-semibold">Fortschrittsverfolgung</h3>
           </div>
           
-          <ExerciseSelector 
-            exercises={exercises}
-            selectedExercise={selectedExercise}
-            onSelectExercise={setSelectedExercise}
-          />
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+            >
+              <span>{selectedExercise || "Übung auswählen"}</span>
+              <ChevronDown size={16} className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+            
+            {isDropdownOpen && (
+              <div className="absolute z-30 top-full right-0 mt-1 bg-background border border-border rounded-lg shadow-lg w-64 max-h-64 overflow-y-auto">
+                {exercises.map((exercise) => (
+                  <button
+                    key={exercise}
+                    onClick={() => {
+                      setSelectedExercise(exercise);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors ${
+                      selectedExercise === exercise ? "bg-secondary" : ""
+                    }`}
+                  >
+                    {exercise}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <CollapsibleContent className="h-[320px]">
-          {data && data.length > 0 ? (
+          {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
@@ -117,7 +138,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
                     borderRadius: "var(--radius)",
                     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
                   }}
-                  formatter={(value: number) => [`${value.toFixed(1)} kg`, t('maxWeight')]}
+                  formatter={(value: number) => [`${value.toFixed(1)} kg`, "Max. Gewicht"]}
                 />
                 <Area
                   type="monotone"
@@ -126,15 +147,15 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ chartData }) => {
                   fillOpacity={1}
                   fill="url(#colorWeight)"
                   strokeWidth={2}
-                  name={t('maxWeight')}
+                  name="Max. Gewicht (kg)"
                 />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               {exercises.length > 0
-                ? t('notEnoughDataExercise')
-                : t('addWorkoutsToSeeProgress')}
+                ? "Nicht genug Daten, um Fortschritte für diese Übung anzuzeigen."
+                : "Füge Workouts hinzu, um deinen Fortschritt zu sehen."}
             </div>
           )}
         </CollapsibleContent>

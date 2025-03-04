@@ -1,181 +1,181 @@
 
 import React, { useState } from "react";
-import { Exercise, Set } from "@/types/workout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calculator, Edit, Plus, Trash, Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { calculateExerciseVolume, calculateSetVolume, getMaxWeight } from "@/utils/workoutUtils";
-import SetEditor from "./SetEditor";
+import { Exercise, Set as WorkoutSet } from "@/types/workout";
+import { Trash, Plus, ChevronDown, ChevronUp, Activity } from "lucide-react";
 
-export interface ExerciseItemProps {
+interface ExerciseItemProps {
   exercise: Exercise;
   workoutId: string;
-  isPersonalRecord: boolean;
-  isEditMode?: boolean;
-  onRemoveExercise: () => void;
-  onAddSet: (set: { reps: number; weight: number }) => void;
-  onRemoveSet: (setId: string) => void;
-  onUpdateSet: (setId: string, set: { reps: number; weight: number }) => void;
+  isPersonalRecord?: boolean;
+  onRemoveExercise?: (id: string) => void;
+  onAddSet?: (exerciseId: string, set: Omit<WorkoutSet, "id">) => void;
+  onRemoveSet?: (exerciseId: string, setId: string) => void;
+  onUpdateSet?: (exerciseId: string, setId: string, field: string, value: number) => void;
 }
 
 const ExerciseItem: React.FC<ExerciseItemProps> = ({
   exercise,
   workoutId,
-  isPersonalRecord,
-  isEditMode = false,
+  isPersonalRecord = false,
   onRemoveExercise,
   onAddSet,
   onRemoveSet,
-  onUpdateSet,
+  onUpdateSet
 }) => {
-  const { t } = useLanguage();
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [newSet, setNewSet] = useState<{ reps: number; weight: number }>({ reps: 8, weight: 0 });
-  
-  const totalVolume = calculateExerciseVolume(exercise);
-  const maxWeight = getMaxWeight(exercise);
-  
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [newSet, setNewSet] = useState<Omit<WorkoutSet, "id">>({ reps: 0, weight: 0 });
+
+  const maxWeightSet = isPersonalRecord && exercise.sets.length > 0 ? 
+    [...exercise.sets].sort((a, b) => b.weight - a.weight)[0] : null;
+
   const handleAddSet = () => {
-    onAddSet(newSet);
-    setNewSet({ reps: 8, weight: 0 });
-    setIsAdding(false);
-  };
-  
-  const startEditSet = (set: Set) => {
-    setEditingSetId(set.id);
-    setNewSet({ reps: set.reps, weight: set.weight });
-  };
-  
-  const handleUpdateSet = () => {
-    if (editingSetId) {
-      onUpdateSet(editingSetId, newSet);
-      setEditingSetId(null);
-      setNewSet({ reps: 8, weight: 0 });
+    if (newSet.reps > 0) {
+      if (onAddSet) {
+        onAddSet(exercise.id, newSet);
+      }
+      setNewSet({ reps: 0, weight: 0 });
     }
   };
-  
+
+  const handleUpdateSet = (setId: string, field: keyof WorkoutSet, value: number) => {
+    if (onUpdateSet) {
+      onUpdateSet(exercise.id, setId, field, value);
+    }
+  };
+
+  // Berechnung des Gesamtvolumens
+  const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
+
   return (
-    <Card className={`border ${isPersonalRecord ? 'border-yellow-500 dark:border-yellow-600' : 'border-border'}`}>
-      <CardHeader className="py-3 px-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">{exercise.name}</CardTitle>
-            {isPersonalRecord && (
-              <Badge variant="outline" className="border-yellow-500 text-yellow-600 dark:text-yellow-400">
-                <Trophy size={12} className="mr-1" /> {t('personalRecord')}
-              </Badge>
-            )}
-          </div>
-          
-          {isEditMode && (
-            <Button 
-              size="sm" 
-              variant="destructive" 
-              className="h-8 w-8 p-0" 
-              onClick={onRemoveExercise}
-            >
-              <Trash size={16} />
-            </Button>
+    <div className="glass-card rounded-xl mb-4 overflow-hidden animate-slide-up">
+      <div 
+        className="p-4 flex items-center justify-between cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-lg font-medium">{exercise.name}</div>
+          {isPersonalRecord && (
+            <div className="bg-accent/10 text-accent px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+              <Activity size={12} />
+              PR
+            </div>
           )}
         </div>
-      </CardHeader>
+        
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground hidden sm:block">
+            Gesamtvolumen: <span className="font-medium">{totalVolume.toFixed(1)} kg</span>
+          </div>
+          
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onRemoveExercise) {
+                onRemoveExercise(exercise.id);
+              }
+            }}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <Trash size={16} />
+          </button>
+          
+          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </div>
+      </div>
       
-      <CardContent className="px-4 py-2">
-        {exercise.sets.length === 0 ? (
-          <div className="text-center text-muted-foreground py-2">
-            <p>{t('exercise.noSets')}</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-12 text-xs text-muted-foreground mb-1 px-1">
-              <div className="col-span-1">#</div>
-              <div className="col-span-3">{t('reps')}</div>
-              <div className="col-span-3">{t('weight')}</div>
-              <div className="col-span-3">{t('volume')}</div>
-              <div className="col-span-2"></div>
-            </div>
-            
-            {exercise.sets.map((set, index) => (
-              <div key={set.id}>
-                {editingSetId === set.id ? (
-                  <SetEditor 
-                    set={set}
-                    index={index}
-                    newSet={newSet}
-                    onSetChange={setNewSet}
-                    onSave={handleUpdateSet}
-                  />
-                ) : (
-                  <div className="grid grid-cols-12 items-center bg-accent/5 p-2 rounded-md">
-                    <div className="col-span-1">{index + 1}</div>
-                    <div className="col-span-3">{set.reps}</div>
-                    <div className="col-span-3">{set.weight} kg</div>
-                    <div className="col-span-3">{calculateSetVolume(set)}</div>
-                    <div className="col-span-2 flex justify-end gap-1">
-                      {isEditMode && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 w-7 p-0" 
-                            onClick={() => startEditSet(set)}
-                          >
-                            <Edit size={14} />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
-                            className="h-7 w-7 p-0" 
-                            onClick={() => onRemoveSet(set.id)}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {isEditMode && (
-          <div className="mt-4">
-            {isAdding ? (
-              <SetEditor 
-                isNew
-                newSet={newSet}
-                onSetChange={setNewSet}
-                onSave={handleAddSet}
-              />
-            ) : (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="w-full mt-2" 
-                onClick={() => setIsAdding(true)}
-              >
-                <Plus size={16} className="mr-1" /> {t('exercise.addSet')}
-              </Button>
-            )}
-          </div>
-        )}
-        
-        <div className="flex justify-between items-center mt-4 pt-2 border-t border-border/60 text-xs text-muted-foreground">
-          <div className="flex items-center">
-            <Calculator size={14} className="mr-1" /> 
-            {t('totalVolume')}: <span className="font-semibold ml-1">{totalVolume}</span>
-          </div>
-          <div>
-            {t('maxWeight')}: <span className="font-semibold">{maxWeight} kg</span>
+      {isExpanded && (
+        <div className="p-4 pt-0 border-t border-border">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-sm text-muted-foreground">
+                  <th className="pb-2 font-medium">Satz</th>
+                  <th className="pb-2 font-medium">Wdh</th>
+                  <th className="pb-2 font-medium">Gewicht (kg)</th>
+                  <th className="pb-2 font-medium">Volumen</th>
+                  <th className="pb-2 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {exercise.sets.map((set, index) => {
+                  const isPRSet = maxWeightSet && set.id === maxWeightSet.id;
+                  return (
+                    <tr key={set.id} className={`border-t border-border/30 ${isPRSet ? "bg-accent/5" : ""}`}>
+                      <td className="py-2 text-sm">{index + 1}</td>
+                      <td className="py-2">
+                        <input
+                          type="number"
+                          value={set.reps}
+                          onChange={(e) => handleUpdateSet(set.id, "reps", parseInt(e.target.value) || 0)}
+                          className={`w-16 p-1 border border-input rounded bg-transparent ${isPRSet ? "font-bold text-accent" : ""}`}
+                          min="0"
+                        />
+                      </td>
+                      <td className="py-2">
+                        <input
+                          type="number"
+                          value={set.weight}
+                          onChange={(e) => handleUpdateSet(set.id, "weight", parseFloat(e.target.value) || 0)}
+                          step="0.5"
+                          className={`w-20 p-1 border border-input rounded bg-transparent ${isPRSet ? "font-bold text-accent" : ""}`}
+                          min="0"
+                        />
+                      </td>
+                      <td className={`py-2 text-sm ${isPRSet ? "font-bold text-accent" : ""}`}>
+                        {(set.reps * set.weight).toFixed(1)} kg
+                      </td>
+                      <td className="py-2 text-right">
+                        <button
+                          onClick={() => onRemoveSet && onRemoveSet(exercise.id, set.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                <tr className="border-t border-border/30">
+                  <td className="py-2 text-sm">{exercise.sets.length + 1}</td>
+                  <td className="py-2">
+                    <input
+                      type="number"
+                      value={newSet.reps || ''}
+                      onChange={(e) => setNewSet({ ...newSet, reps: parseInt(e.target.value) || 0 })}
+                      className="w-16 p-1 border border-input rounded bg-transparent"
+                      placeholder="Wdh"
+                      min="0"
+                    />
+                  </td>
+                  <td className="py-2">
+                    <input
+                      type="number"
+                      value={newSet.weight || ''}
+                      onChange={(e) => setNewSet({ ...newSet, weight: parseFloat(e.target.value) || 0 })}
+                      step="0.5"
+                      className="w-20 p-1 border border-input rounded bg-transparent"
+                      placeholder="Gewicht"
+                      min="0"
+                    />
+                  </td>
+                  <td className="py-2 text-sm">{((newSet.reps || 0) * (newSet.weight || 0)).toFixed(1)} kg</td>
+                  <td className="py-2 text-right">
+                    <button
+                      onClick={handleAddSet}
+                      className="text-accent hover:text-accent/80 disabled:text-muted-foreground transition-colors"
+                      disabled={!newSet.reps}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
