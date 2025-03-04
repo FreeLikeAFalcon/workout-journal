@@ -114,6 +114,7 @@ const Index: React.FC = () => {
   
   // If we're still loading, show a loading state
   if (isLoading) {
+    console.log("Index: Loading state - authLoading:", authLoading, "workoutsLoading:", workoutsLoading, "metricsLoading:", metricsLoading);
     return (
       <Layout>
         <div className="space-y-8 animate-pulse">
@@ -130,6 +131,8 @@ const Index: React.FC = () => {
       </Layout>
     );
   }
+  
+  console.log("Index: Rendering content - workouts:", workouts?.length, "widgets:", visibleWidgets?.length);
   
   return (
     <Layout>

@@ -15,23 +15,34 @@ export function useAuth() {
 
   useEffect(() => {
     const fetchInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setIsEmailConfirmed(session.user.email_confirmed_at !== null);
-        const userProfile = await fetchProfile(session.user.id);
-        setProfile(userProfile);
+      console.log("useAuth: Fetching initial session");
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("useAuth: Initial session fetched", !!session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setIsEmailConfirmed(session.user.email_confirmed_at !== null);
+          const userProfile = await fetchProfile(session.user.id);
+          setProfile(userProfile);
+        } else {
+          setProfile(null);
+          setIsEmailConfirmed(false);
+        }
+      } catch (error) {
+        console.error("useAuth: Error fetching initial session", error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        console.log("useAuth: Auth state changed", _event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
