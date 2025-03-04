@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Welcome from "./pages/Welcome";
+import Profile from "./pages/Profile";
 import { WorkoutProvider } from "./contexts/WorkoutContext";
 import { MetricsProvider } from "./contexts/MetricsContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -35,6 +36,11 @@ const App = () => (
                     <Route path="/dashboard" element={
                       <ProtectedRoute>
                         <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <Profile />
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
