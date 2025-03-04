@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -52,14 +51,12 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   
-  // Create profile form schema
   const profileFormSchema = z.object({
     username: z.string().min(3, t('usernameMinLength')),
     weight: z.number().min(20).max(500).optional(),
     email: z.string().email(t('invalidEmail')),
   });
 
-  // Create password form schema
   const passwordFormSchema = z.object({
     currentPassword: z.string().min(6, t('passwordMinLength')),
     newPassword: z.string().min(6, t('passwordMinLength')),
@@ -69,7 +66,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     path: ["confirmPassword"],
   });
 
-  // Initialize profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -79,7 +75,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     },
   });
 
-  // Initialize password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -93,7 +88,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     try {
       setError(null);
       
-      // Update profile (username)
       if (user && values.username !== initialData.username) {
         const { error } = await supabase
           .from('profiles')
@@ -103,7 +97,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         if (error) throw error;
       }
       
-      // Update email if changed
       if (user && values.email !== initialData.email) {
         const { error } = await supabase.auth.updateUser({
           email: values.email,
@@ -112,7 +105,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         if (error) throw error;
       }
       
-      // Add new weight metric if changed and has a value
       if (values.weight && values.weight !== initialData.weight) {
         await addMetric({
           type: 'weight',
@@ -187,7 +179,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       setIsDeleting(true);
       setError(null);
 
-      // Delete all user data
       const { error: deleteError } = await supabase.rpc('delete_user', {
         user_password: deleteConfirmPassword
       });
@@ -199,10 +190,8 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         description: t('accountDeletedDesc'),
       });
       
-      // Sign out the user
       await signOut();
       
-      // Navigate to the welcome page
       navigate('/');
       
     } catch (error) {
@@ -280,7 +269,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                         <Input 
                           type="number" 
                           placeholder={t('enterWeight')} 
-                          {...field}
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(value ? parseFloat(value) : undefined);
