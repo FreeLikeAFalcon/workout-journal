@@ -2,6 +2,7 @@
 import React, { createContext, useContext } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { useWorkouts } from "@/hooks/useWorkouts";
+import { toast } from "@/hooks/use-toast";
 
 interface WorkoutContextType {
   workouts: Workout[];
@@ -57,9 +58,22 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
   
   const clearAllWorkouts = async () => {
-    // Implement clear all functionality - for now just log
-    console.log("Clear all workouts - Not implemented yet");
-    return Promise.resolve();
+    try {
+      for (const workout of workouts) {
+        await deleteWorkoutHook(workout.id);
+      }
+      toast({
+        title: "Workouts cleared",
+        description: "All your workouts have been cleared.",
+      });
+    } catch (error) {
+      console.error("Error clearing workouts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear workouts",
+        variant: "destructive",
+      });
+    }
   };
   
   const workoutManager: WorkoutContextType = {

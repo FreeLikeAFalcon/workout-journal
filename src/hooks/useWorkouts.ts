@@ -42,7 +42,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
       if (user) {
         setIsLoading(true);
         try {
-          const fetchedWorkouts = await fetchWorkouts(user.id);
+          const fetchedWorkouts = await fetchWorkouts();
           setWorkouts(fetchedWorkouts);
         } catch (error) {
           console.error("Failed to fetch workouts:", error);

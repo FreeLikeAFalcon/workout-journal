@@ -11,7 +11,7 @@ interface WidgetCustomizerProps {
 }
 
 const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
-  const { widgets, updateWidgets } = useMetrics();
+  const { widgets, updateWidgetSettings } = useMetrics();
   const [localWidgets, setLocalWidgets] = useState<WidgetConfig[]>([...widgets]);
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
   const { t } = useLanguage();
@@ -77,7 +77,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   };
 
   const saveChanges = () => {
-    updateWidgets(localWidgets);
+    updateWidgetSettings(localWidgets);
     onClose();
   };
 
@@ -87,7 +87,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card rounded-xl max-w-md w-full p-6 animate-fade-in dark:bg-gray-800 dark:border-gray-700">
+      <div className="bg-background rounded-xl max-w-md w-full p-6 animate-fade-in border border-border">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <LayoutGrid size={20} />
@@ -99,7 +99,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
         </div>
         
         <p className="text-muted-foreground mb-4">
-          Ziehe die Widgets, um ihre Reihenfolge zu ändern. Klicke auf ein Widget, um es ein- oder auszublenden.
+          {t('widgets.dragInstruction')}
         </p>
         
         <ScrollArea className="mb-6 h-[200px] pr-4">
@@ -124,7 +124,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
                   className={`w-5 h-5 rounded-sm flex items-center justify-center ${
                     widget.visible ? "bg-accent text-white" : "border border-muted-foreground"
                   }`}
-                  aria-label={widget.visible ? "Widget ausblenden" : "Widget einblenden"}
+                  aria-label={widget.visible ? t('widgets.hide') : t('widgets.show')}
                 >
                   {widget.visible && <span className="w-2 h-2">✓</span>}
                 </button>

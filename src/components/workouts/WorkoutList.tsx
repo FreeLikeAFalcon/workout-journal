@@ -2,14 +2,13 @@
 import React, { useState } from "react";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Exercise, Workout } from "@/types/workout";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { formatDate, findPreviousExercise, isPersonalRecord } from "@/utils/workoutUtils";
 import ExerciseItem from "./ExerciseItem";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Edit2, Trash } from "lucide-react";
-import { Button } from "../ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { Card, CardContent } from "../ui/card";
+import ActionButtons from "./ActionButtons";
 
 const WorkoutList: React.FC = () => {
   const { workouts, deleteWorkout, addSetToExercise, removeSetFromExercise, updateSet, removeExerciseFromWorkout } = useWorkout();
@@ -62,93 +61,84 @@ const WorkoutList: React.FC = () => {
     );
   };
 
+  // Render an empty state when there are no workouts
+  if (sortedWorkouts.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center text-muted-foreground">
+            <p>{t('workout.noWorkouts')}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {sortedWorkouts.length === 0 ? (
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center text-muted-foreground">
-              <p>{t('workout.noWorkouts')}</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Accordion type="multiple" defaultValue={[]} value={expandedWorkouts} className="space-y-4">
-          {sortedWorkouts.map((workout) => (
-            <AccordionItem key={workout.id} value={workout.id} className="border border-border rounded-md overflow-hidden">
-              <div className="flex justify-between items-center p-4">
-                <div className="flex-1">
-                  <AccordionTrigger 
-                    onClick={() => toggleWorkoutExpansion(workout.id)} 
-                    className="hover:no-underline py-0 [&[data-state=open]>svg]:rotate-180"
-                  >
-                    <div className="flex flex-col items-start">
-                      <h3 className="text-lg font-semibold">{workout.program}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{formatDate(workout.date)}</span>
-                        <span>•</span>
-                        <span>{workout.phase}</span>
-                      </div>
+      <Accordion type="multiple" defaultValue={[]} value={expandedWorkouts} className="space-y-4">
+        {sortedWorkouts.map((workout) => (
+          <AccordionItem key={workout.id} value={workout.id} className="border border-border rounded-md overflow-hidden">
+            <div className="flex justify-between items-center p-4">
+              <div className="flex-1">
+                <AccordionTrigger 
+                  onClick={() => toggleWorkoutExpansion(workout.id)} 
+                  className="hover:no-underline py-0 [&[data-state=open]>svg]:rotate-180"
+                >
+                  <div className="flex flex-col items-start">
+                    <h3 className="text-lg font-semibold">{workout.program}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{formatDate(workout.date)}</span>
+                      <span>•</span>
+                      <span>{workout.phase}</span>
                     </div>
-                  </AccordionTrigger>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleEditMode(workout.id);
-                    }}
-                  >
-                    <Edit2 size={16} />
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteWorkout(workout.id);
-                    }}
-                  >
-                    <Trash size={16} />
-                  </Button>
-                </div>
+                  </div>
+                </AccordionTrigger>
               </div>
-              
-              <AccordionContent className="pb-4 px-4">
-                <div className="space-y-4 mt-2">
-                  {workout.exercises.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-4">
-                      <p>{t('workout.noExercises')}</p>
-                    </div>
-                  ) : (
-                    workout.exercises.map((exercise: Exercise) => {
-                      // Find previous exercise for comparison (if any)
-                      const previousExercise = findPreviousExercise(exercise.name, workouts);
-                      const isPR = previousExercise ? isPersonalRecord(exercise, previousExercise) : false;
-                      
-                      return (
-                        <ExerciseItem
-                          key={exercise.id}
-                          exercise={exercise}
-                          workoutId={workout.id}
-                          isPersonalRecord={isPR}
-                          isEditMode={editMode === workout.id}
-                          onRemoveExercise={() => handleDeleteExercise(workout.id, exercise.id)}
-                          onAddSet={(set) => handleAddSet(workout.id, exercise.id, set)}
-                          onRemoveSet={(setId) => handleRemoveSet(workout.id, exercise.id, setId)}
-                          onUpdateSet={(setId, newSet) => handleUpdateSet(workout.id, exercise.id, setId, newSet)}
-                        />
-                      );
-                    })
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      )}
+              <ActionButtons 
+                onEdit={(e) => {
+                  e.stopPropagation();
+                  toggleEditMode(workout.id);
+                }}
+                onDelete={(e) => {
+                  e.stopPropagation();
+                  handleDeleteWorkout(workout.id);
+                }}
+              />
+            </div>
+            
+            <AccordionContent className="pb-4 px-4">
+              <div className="space-y-4 mt-2">
+                {workout.exercises.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-4">
+                    <p>{t('workout.noExercises')}</p>
+                  </div>
+                ) : (
+                  workout.exercises.map((exercise: Exercise) => {
+                    // Find previous exercise for comparison (if any)
+                    const previousExercise = findPreviousExercise(exercise.name, workouts);
+                    const isPR = previousExercise ? isPersonalRecord(exercise, previousExercise) : false;
+                    
+                    return (
+                      <ExerciseItem
+                        key={exercise.id}
+                        exercise={exercise}
+                        workoutId={workout.id}
+                        isPersonalRecord={isPR}
+                        isEditMode={editMode === workout.id}
+                        onRemoveExercise={() => handleDeleteExercise(workout.id, exercise.id)}
+                        onAddSet={(set) => handleAddSet(workout.id, exercise.id, set)}
+                        onRemoveSet={(setId) => handleRemoveSet(workout.id, exercise.id, setId)}
+                        onUpdateSet={(setId, newSet) => handleUpdateSet(workout.id, exercise.id, setId, newSet)}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
       
       {/* Confirm delete dialog */}
       <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>

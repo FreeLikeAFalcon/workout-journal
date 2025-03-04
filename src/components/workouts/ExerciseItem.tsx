@@ -1,11 +1,13 @@
+
 import React, { useState } from "react";
 import { Exercise, Set } from "@/types/workout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Check, Edit, Plus, Trash, Trophy } from "lucide-react";
+import { Calculator, Edit, Plus, Trash, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateExerciseVolume, calculateSetVolume, getMaxWeight } from "@/utils/workoutUtils";
+import SetEditor from "./SetEditor";
 
 export interface ExerciseItemProps {
   exercise: Exercise;
@@ -97,40 +99,17 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
             </div>
             
             {exercise.sets.map((set, index) => (
-              <div key={set.id} className="grid grid-cols-12 items-center bg-accent/5 p-2 rounded-md">
+              <div key={set.id}>
                 {editingSetId === set.id ? (
-                  <>
-                    <div className="col-span-1">{index + 1}</div>
-                    <div className="col-span-3">
-                      <input 
-                        type="number" 
-                        value={newSet.reps} 
-                        onChange={(e) => setNewSet({...newSet, reps: parseInt(e.target.value) || 0})}
-                        className="w-full p-1 text-sm border rounded bg-background"
-                      />
-                    </div>
-                    <div className="col-span-3">
-                      <input 
-                        type="number" 
-                        value={newSet.weight} 
-                        onChange={(e) => setNewSet({...newSet, weight: parseInt(e.target.value) || 0})}
-                        className="w-full p-1 text-sm border rounded bg-background"
-                      />
-                    </div>
-                    <div className="col-span-3 text-sm">{calculateSetVolume({...newSet, id: ''})}</div>
-                    <div className="col-span-2 flex justify-end">
-                      <Button 
-                        size="sm" 
-                        variant="default" 
-                        className="h-7 w-7 p-0" 
-                        onClick={handleUpdateSet}
-                      >
-                        <Check size={14} />
-                      </Button>
-                    </div>
-                  </>
+                  <SetEditor 
+                    set={set}
+                    index={index}
+                    newSet={newSet}
+                    onSetChange={setNewSet}
+                    onSave={handleUpdateSet}
+                  />
                 ) : (
-                  <>
+                  <div className="grid grid-cols-12 items-center bg-accent/5 p-2 rounded-md">
                     <div className="col-span-1">{index + 1}</div>
                     <div className="col-span-3">{set.reps}</div>
                     <div className="col-span-3">{set.weight} kg</div>
@@ -157,7 +136,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
                         </>
                       )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             ))}
@@ -167,38 +146,12 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
         {isEditMode && (
           <div className="mt-4">
             {isAdding ? (
-              <div className="grid grid-cols-12 gap-2 items-center bg-accent/5 p-2 rounded-md">
-                <div className="col-span-1">+</div>
-                <div className="col-span-3">
-                  <input 
-                    type="number" 
-                    value={newSet.reps} 
-                    onChange={(e) => setNewSet({...newSet, reps: parseInt(e.target.value) || 0})}
-                    className="w-full p-1 text-sm border rounded bg-background"
-                    min="0"
-                  />
-                </div>
-                <div className="col-span-3">
-                  <input 
-                    type="number" 
-                    value={newSet.weight} 
-                    onChange={(e) => setNewSet({...newSet, weight: parseInt(e.target.value) || 0})}
-                    className="w-full p-1 text-sm border rounded bg-background"
-                    min="0"
-                  />
-                </div>
-                <div className="col-span-3 text-sm">{calculateSetVolume({...newSet, id: ''})}</div>
-                <div className="col-span-2 flex justify-end">
-                  <Button 
-                    size="sm" 
-                    variant="default" 
-                    className="h-7 w-7 p-0" 
-                    onClick={handleAddSet}
-                  >
-                    <Check size={14} />
-                  </Button>
-                </div>
-              </div>
+              <SetEditor 
+                isNew
+                newSet={newSet}
+                onSetChange={setNewSet}
+                onSave={handleAddSet}
+              />
             ) : (
               <Button 
                 size="sm" 
