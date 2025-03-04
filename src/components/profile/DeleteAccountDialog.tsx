@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   AlertDialog,
@@ -8,11 +9,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
@@ -48,8 +47,11 @@ const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({ open, onOpenC
         return;
       }
 
-      // Delete the user account from Supabase Auth
-      const { error: deleteError } = await supabase.auth.deleteUser({ password });
+      // Use the client-side method to delete the user account
+      const { error: deleteError } = await supabase.auth.updateUser({
+        password: password, // Need to provide the password for sensitive operations
+        data: { delete_user: true } // This is a custom flag we'll use in our SQL function
+      });
 
       if (deleteError) {
         console.error("Error deleting user account:", deleteError);

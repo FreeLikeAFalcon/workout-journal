@@ -24,6 +24,7 @@ const formSchema = z.object({
 
 const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({ open, onOpenChange }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -35,9 +36,13 @@ const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({ open, onOpenChang
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      if (!user?.email) {
+        throw new Error("User email not found");
+      }
+      
       // First verify the password by signing in
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: supabase.auth.getUser().then(res => res.data.user?.email || ''),
+        email: user.email,
         password: values.password,
       });
       
