@@ -20,6 +20,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  isEmailConfirmed: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEmailConfirmed, setIsEmailConfirmed] = useState(true);
 
   useEffect(() => {
     // Get initial session
@@ -37,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setIsEmailConfirmed(session.user.email_confirmed_at !== null);
         fetchProfile(session.user.id);
       }
       
@@ -50,9 +53,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          setIsEmailConfirmed(session.user.email_confirmed_at !== null);
           fetchProfile(session.user.id);
         } else {
           setProfile(null);
+          setIsEmailConfirmed(false);
         }
         
         setLoading(false);
@@ -86,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -100,6 +105,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Check if email is confirmed
+      if (data.user && !data.user.email_confirmed_at) {
+        setIsEmailConfirmed(false);
+        toast({
+          title: "E-Mail nicht bestätigt",
+          description: "Bitte bestätige deine E-Mail, um fortzufahren.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsEmailConfirmed(true);
       toast({
         title: "Erfolgreich angemeldet",
         description: "Willkommen zurück!",
@@ -115,6 +132,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, username: string) => {
     try {
       setLoading(true);
+      
+      // Get the current URL to use as the redirect URL
+      const redirectUrl = window.location.origin + '/auth?tab=login';
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -122,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             username,
           },
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -138,6 +160,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Registrierung erfolgreich",
         description: "Bitte überprüfe deine E-Mails für die Bestätigung.",
       });
+      
+      setIsEmailConfirmed(false);
     } catch (error) {
       console.error("Error signing up:", error);
       throw error;
@@ -176,6 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         loading,
+        isEmailConfirmed,
       }}
     >
       {children}
