@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from "react";
 import i18n from "@/integrations/i18n";
 
@@ -128,10 +127,12 @@ const translations = {
     accountDeleted: "Account Deleted",
     accountDeletedDesc: "Your account has been successfully deleted.",
     errorDeletingAccount: "There was an error deleting your account.",
-    journey: "Your Fitness Journey",
     myAccount: "My Account",
     signOut: "Sign Out",
-    signIn: "Sign In"
+    signIn: "Sign In",
+    "welcome.title": "Track your progress, achieve your goals",
+    "welcome.subtitle": "The simplest way to log your workouts, track your progress, and improve your fitness.",
+    journey: "Your Fitness Journey",
   },
   de: {
     dashboard: "Dashboard",
@@ -207,9 +208,11 @@ const translations = {
     accountDeleted: "Konto gelöscht",
     accountDeletedDesc: "Dein Konto wurde erfolgreich gelöscht.",
     errorDeletingAccount: "Beim Löschen deines Kontos ist ein Fehler aufgetreten.",
-    journey: "Deine Fitness-Reise",
     myAccount: "Mein Konto",
     signOut: "Abmelden",
-    signIn: "Anmelden"
+    signIn: "Anmelden",
+    "welcome.title": "Verfolge deinen Fortschritt, erreiche deine Ziele",
+    "welcome.subtitle": "Die einfachste Möglichkeit, deine Workouts zu protokollieren, deine Fortschritte zu verfolgen und deine Fitness zu steigern.",
+    journey: "Deine Fitness-Reise",
   }
 } as const;
