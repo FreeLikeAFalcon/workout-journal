@@ -45,7 +45,14 @@ export type TranslationKey =
   | 'please.fill.all.fields'
   | 'password.too.short'
   | 'registration.successful'
-  | 'registration.failed';
+  | 'registration.failed'
+  | 'please.enter.email'
+  | 'password.reset.email.sent'
+  | 'password.reset.failed'
+  | 'password.reset'
+  | 'forgot.password'
+  | 'back.to.login'
+  | 'password.reset.link';
 
 // Define translations for each language
 const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -89,7 +96,15 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'please.fill.all.fields': 'Bitte fülle alle Felder aus',
     'password.too.short': 'Passwort muss mindestens 6 Zeichen lang sein',
     'registration.successful': 'Registrierung erfolgreich',
-    'registration.failed': 'Registrierung fehlgeschlagen'
+    'registration.failed': 'Registrierung fehlgeschlagen',
+    // New translations
+    'please.enter.email': 'Bitte gib deine E-Mail-Adresse ein',
+    'password.reset.email.sent': 'E-Mail zum Zurücksetzen des Passworts wurde gesendet',
+    'password.reset.failed': 'Fehler beim Zurücksetzen des Passworts',
+    'password.reset': 'Passwort zurücksetzen',
+    'forgot.password': 'Passwort vergessen?',
+    'back.to.login': 'Zurück zum Login',
+    'password.reset.link': 'Link zum Zurücksetzen senden'
   },
   en: {
     'workouts.total': 'Total Workouts',
@@ -131,7 +146,15 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'please.fill.all.fields': 'Please fill all fields',
     'password.too.short': 'Password must be at least 6 characters',
     'registration.successful': 'Registration successful',
-    'registration.failed': 'Registration failed'
+    'registration.failed': 'Registration failed',
+    // New translations
+    'please.enter.email': 'Please enter your email',
+    'password.reset.email.sent': 'Password reset email sent',
+    'password.reset.failed': 'Failed to reset password',
+    'password.reset': 'Reset Password',
+    'forgot.password': 'Forgot password?',
+    'back.to.login': 'Back to login',
+    'password.reset.link': 'Send reset link'
   }
 };
 
