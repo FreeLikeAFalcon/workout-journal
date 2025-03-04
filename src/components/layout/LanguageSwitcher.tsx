@@ -18,7 +18,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className }) => {
   
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage);
-    console.log(`Language changed to: ${newLanguage}`);
+    console.log(`Sprache geändert zu: ${newLanguage}`);
   };
 
   return (

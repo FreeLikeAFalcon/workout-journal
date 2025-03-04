@@ -1,25 +1,7 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { AlertCircle, Trash2 } from "lucide-react";
-import { FormLabel } from "@/components/ui/form";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 
 interface DangerTabProps {
@@ -28,113 +10,93 @@ interface DangerTabProps {
 
 const DangerTab: React.FC<DangerTabProps> = ({ onSuccess }) => {
   const { t } = useLanguage();
-  const { signOut } = useAuth();
-  const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
+  const { deleteAccount } = useAuth();
+  const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  const handleDeleteAccount = async () => {
-    if (!deleteConfirmPassword) {
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!password) {
       toast({
         title: t('error'),
-        description: t('please.fill.all.fields'),
+        description: t('enterPasswordToConfirm'),
         variant: "destructive",
       });
       return;
     }
-
+    
+    setIsDeleting(true);
+    
     try {
-      setIsDeleting(true);
-      setError(null);
-
-      const { error: deleteError } = await supabase.rpc('delete_user', {
-        user_password: deleteConfirmPassword
-      });
-
-      if (deleteError) throw deleteError;
+      await deleteAccount(password);
       
       toast({
         title: t('accountDeleted'),
         description: t('accountDeletedDesc'),
       });
       
-      await signOut();
-      
-      navigate('/');
-      
+      onSuccess();
     } catch (error) {
       console.error("Error deleting account:", error);
-      setError(error.message || t('errorDeletingAccount'));
+      
       toast({
         title: t('error'),
-        description: error.message || t('errorDeletingAccount'),
+        description: t('errorDeletingAccount'),
         variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
     }
   };
-  
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Fix the type error by explicitly typing the value as string
+    const value = e.target.value;
+    setPassword(value);
+  };
+
   return (
-    <div className="space-y-4 py-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {t('deleteAccountWarning')}
-          </AlertDescription>
-        </Alert>
-        
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" className="w-full">
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('deleteAccount')}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('deleteAccountConfirm')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('deleteAccountWarning')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            
-            <div className="py-4">
-              <FormLabel>{t('enterPasswordToConfirm')}</FormLabel>
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                value={deleteConfirmPassword}
-                onChange={(e) => setDeleteConfirmPassword(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-            
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDeleteAccount();
-                }}
-                disabled={isDeleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isDeleting ? t('pleaseWait') : t('delete')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+    <div className="p-4 space-y-4">
+      <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <h3 className="font-medium text-destructive mb-2">{t('deleteAccountConfirm')}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t('deleteAccountWarning')}
+        </p>
       </div>
+      
+      <form onSubmit={handleDeleteAccount}>
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-sm text-muted-foreground mb-1">
+            {t('enterPasswordToConfirm')}
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            className="w-full p-2 border border-input rounded-lg bg-transparent"
+            required
+          />
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onSuccess}
+            className="px-4 py-2 border border-input rounded-lg hover:bg-secondary/50 transition-colors"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="submit"
+            disabled={isDeleting}
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+          >
+            {isDeleting ? `${t('pleaseWait')}...` : t('delete')}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

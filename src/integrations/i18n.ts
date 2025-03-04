@@ -1,7 +1,7 @@
 
-// Simple i18n implementation for our app
+// Verbesserte i18n-Implementierung für unsere App
 const i18n = {
-  language: 'en',
+  language: 'de', // Standardsprache auf Deutsch setzen
   changeLanguage: (lng: string) => {
     i18n.language = lng;
     return Promise.resolve();

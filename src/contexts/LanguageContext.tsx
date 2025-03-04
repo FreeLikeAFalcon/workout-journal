@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from "react";
 import i18n from "@/integrations/i18n";
 
@@ -131,7 +130,17 @@ const translations = {
     journey: "Your Fitness Journey",
     myAccount: "My Account",
     signOut: "Sign Out",
-    signIn: "Sign In"
+    signIn: "Sign In",
+    
+    "widgets.customize": "Customize Widgets",
+    "workouts.total": "Total Workouts",
+    "exercises.total": "Total Exercises",
+    "sets.total": "Total Sets",
+    "exercise.mostFrequent": "Most Frequent Exercise",
+    "metrics.currentWeight": "Current Weight",
+    "metrics.weightGoal": "Weight Goal",
+    "metrics.bodyFat": "Body Fat",
+    "metrics.muscleMass": "Muscle Mass"
   },
   de: {
     dashboard: "Dashboard",
@@ -210,6 +219,16 @@ const translations = {
     journey: "Deine Fitness-Reise",
     myAccount: "Mein Konto",
     signOut: "Abmelden",
-    signIn: "Anmelden"
+    signIn: "Anmelden",
+    
+    "widgets.customize": "Widgets anpassen",
+    "workouts.total": "Gesamte Workouts",
+    "exercises.total": "Gesamte Übungen",
+    "sets.total": "Gesamte Sätze",
+    "exercise.mostFrequent": "Häufigste Übung",
+    "metrics.currentWeight": "Aktuelles Gewicht",
+    "metrics.weightGoal": "Gewichtsziel",
+    "metrics.bodyFat": "Körperfett",
+    "metrics.muscleMass": "Muskelmasse"
   }
 } as const;
