@@ -7,10 +7,8 @@ import { Plus, Save, X } from "lucide-react";
 import ExerciseItem from "./ExerciseItem";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const WorkoutForm: React.FC = () => {
-  const { t } = useLanguage();
   const { addWorkout } = useWorkout();
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split("T")[0]);

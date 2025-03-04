@@ -72,8 +72,7 @@ const Profile: React.FC = () => {
           onOpenChange={setIsEditDialogOpen} 
           initialData={{
             username: profile?.username || '',
-            weight: currentWeight || undefined,
-            email: user?.email || '',
+            weight: currentWeight || undefined
           }}
         />
       )}

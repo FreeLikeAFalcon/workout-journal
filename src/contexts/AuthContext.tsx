@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -19,7 +20,6 @@ type AuthContextType = {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string, redirectTo: string) => Promise<void>;
-  deleteAccount: (password: string) => Promise<void>;
   loading: boolean;
   isEmailConfirmed: boolean;
 };
@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isEmailConfirmed, setIsEmailConfirmed] = useState(true);
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -46,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
@@ -104,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Check if email is confirmed
       if (data.user && !data.user.email_confirmed_at) {
         setIsEmailConfirmed(false);
         toast({
@@ -131,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
+      // Get the current URL to use as the redirect URL
       const redirectUrl = window.location.origin + '/auth?tab=login';
       
       const { error } = await supabase.auth.signUp({
@@ -171,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
+      // Make sure we use the full URL including origin for the redirectTo
       const fullRedirectUrl = new URL(redirectTo, window.location.origin).toString();
       
       console.log("Sending password reset with redirect to:", fullRedirectUrl);
@@ -220,51 +225,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteAccount = async (password: string) => {
-    try {
-      setLoading(true);
-      
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || "",
-        password,
-      });
-
-      if (signInError) {
-        toast({
-          title: "Fehler bei der Authentifizierung",
-          description: "Das angegebene Passwort ist falsch.",
-          variant: "destructive",
-        });
-        throw signInError;
-      }
-
-      const { error: deleteError } = await supabase.rpc('delete_user', {
-        user_password: password
-      });
-
-      if (deleteError) {
-        toast({
-          title: "Fehler beim Löschen des Kontos",
-          description: deleteError.message,
-          variant: "destructive",
-        });
-        throw deleteError;
-      }
-
-      await supabase.auth.signOut();
-      
-      toast({
-        title: "Konto gelöscht",
-        description: "Dein Konto wurde erfolgreich gelöscht.",
-      });
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -275,7 +235,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         resetPassword,
-        deleteAccount,
         loading,
         isEmailConfirmed,
       }}
