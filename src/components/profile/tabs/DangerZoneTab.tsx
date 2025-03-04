@@ -44,9 +44,10 @@ export const DangerZoneTab: React.FC = () => {
       setIsDeleting(true);
       setError(null);
 
+      // Fix: Cast the parameter to an explicit type to match what the RPC function expects
       const { error: deleteError } = await supabase.rpc('delete_user', {
         user_password: deleteConfirmPassword
-      });
+      } as { user_password: string });
 
       if (deleteError) throw deleteError;
       
