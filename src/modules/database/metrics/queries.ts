@@ -29,13 +29,27 @@ export const fetchMetrics = async () => {
 };
 
 export const addMetricEntry = async (data: { type: string; value: number; date: string }) => {
+  // Get the current user first
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error('Error getting user:', userError);
+    throw new Error('Failed to authenticate user');
+  }
+  
+  const userId = userData.user?.id;
+  
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+  
   const { data: insertedData, error } = await supabase
     .from('body_metrics')
     .insert({
       metric_type: data.type,
       value: data.value,
       date: data.date,
-      user_id: supabase.auth.getUser().then(result => result.data.user?.id)
+      user_id: userId
     })
     .select()
     .single();

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from "react";
 import { BodyMetrics, WidgetConfig } from "@/types/metrics";
-import { useMetrics } from "@/hooks/useMetrics";
+import { useMetrics as useMetricsHook } from "@/hooks/useMetrics";
 
 interface MetricsContextType {
   metrics: BodyMetrics | null;
@@ -26,7 +26,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setGoal,
     getLatestMetricValue,
     updateWidgetSettings,
-  } = useMetrics();
+  } = useMetricsHook();
 
   return (
     <MetricsContext.Provider
@@ -46,10 +46,10 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useMetricsContext = (): MetricsContextType => {
+export const useMetrics = (): MetricsContextType => {
   const context = useContext(MetricsContext);
   if (!context) {
-    throw new Error("useMetricsContext must be used within a MetricsProvider");
+    throw new Error("useMetrics must be used within a MetricsProvider");
   }
   return context;
 };

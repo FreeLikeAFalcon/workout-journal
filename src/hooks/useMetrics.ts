@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { BodyMetrics, WidgetConfig } from "@/types/metrics";
 import { 
@@ -10,7 +9,7 @@ import {
 } from "@/modules/database/metrics/queries";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { transformMetricsData, transformWidgetsData, getLatestMetricValue } from "@/utils/metricsUtils";
+import { transformMetricsData, transformWidgetsData } from "@/utils/metricsUtils";
 
 export const useMetrics = () => {
   const [metrics, setMetrics] = useState<BodyMetrics | null>(null);
@@ -204,6 +203,16 @@ export const useMetrics = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Get the latest value for a specific metric type
+  const getLatestMetricValue = (type: keyof BodyMetrics): number | undefined => {
+    if (!metrics) return undefined;
+    
+    const entries = metrics[type]?.entries;
+    if (!entries || entries.length === 0) return undefined;
+    
+    return entries[0].value; // Assuming entries are already sorted by date (newest first)
   };
 
   return {
