@@ -61,8 +61,7 @@ const Welcome: React.FC = () => {
           <Button 
             asChild 
             size="lg" 
-            variant="outline" 
-            className="flex-1 border-white text-white hover:bg-white/10 text-lg py-6"
+            className="flex-1 bg-white text-blue-600 hover:bg-white/90 text-lg py-6"
           >
             <Link to="/auth?tab=register">{t('register')}</Link>
           </Button>
