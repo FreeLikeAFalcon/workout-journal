@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -53,7 +54,11 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   
   const profileFormSchema = z.object({
     username: z.string().min(3, t('usernameMinLength')),
-    weight: z.number().min(20).max(500).optional(),
+    weight: z.preprocess(
+      // Convert empty string to undefined, string number to number
+      (val) => val === '' ? undefined : val === null ? undefined : Number(val),
+      z.number().min(20).max(500).optional()
+    ),
     email: z.string().email(t('invalidEmail')),
   });
 
@@ -66,7 +71,9 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     path: ["confirmPassword"],
   });
 
-  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
+  type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+  const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       username: initialData.username,
@@ -84,7 +91,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     },
   });
 
-  const onSubmitProfile = async (values: z.infer<typeof profileFormSchema>) => {
+  const onSubmitProfile = async (values: ProfileFormValues) => {
     try {
       setError(null);
       
@@ -271,7 +278,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                           placeholder={t('enterWeight')} 
                           onChange={(e) => {
                             const value = e.target.value;
-                            field.onChange(value ? parseFloat(value) : undefined);
+                            field.onChange(value === '' ? undefined : value ? parseFloat(value) : undefined);
                           }}
                           value={field.value ?? ''}
                         />
