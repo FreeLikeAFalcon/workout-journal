@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { useWorkouts } from "@/hooks/useWorkouts";
@@ -25,8 +24,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const {
     workouts,
     isLoading,
-    workoutStats,
-    chartData,
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout: updateWorkoutHook,

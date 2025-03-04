@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading, isEmailConfirmed } = useAuth();
 
+  // Show loading indicator while checking authentication
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -18,14 +19,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // Redirect to welcome page if not logged in
   if (!user) {
     return <Navigate to="/welcome" replace />;
   }
 
+  // Redirect to login if email not confirmed
   if (!isEmailConfirmed) {
     return <Navigate to="/auth?tab=login" replace />;
   }
 
+  // Everything is good, render the protected content
   return <>{children}</>;
 };
 

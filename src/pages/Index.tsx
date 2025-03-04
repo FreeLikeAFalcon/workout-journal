@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import WorkoutForm from "@/components/workouts/WorkoutForm";
 import WorkoutList from "@/components/workouts/WorkoutList";
@@ -31,8 +31,8 @@ const Index: React.FC = () => {
   const isLoading = workoutsLoading || metricsLoading || authLoading;
   const hasError = workoutsError || metricsError;
   
-  // If not logged in, redirect to welcome page
-  React.useEffect(() => {
+  // Check if user is authenticated
+  useEffect(() => {
     if (!authLoading && !user) {
       navigate("/welcome");
     }
