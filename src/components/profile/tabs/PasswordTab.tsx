@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { supabase } from "@/integrations/supabase/client";
+import { updatePassword } from "@/modules/database/profiles/queries";
 import { toast } from "@/hooks/use-toast";
 import { passwordFormSchema, type PasswordFormValues } from "../schemas/profileSchemas";
 
@@ -33,11 +33,11 @@ export const PasswordTab: React.FC<PasswordTabProps> = ({ onClose }) => {
     try {
       setError(null);
       
-      const { error } = await supabase.auth.updateUser({
-        password: values.newPassword,
-      });
+      const result = await updatePassword(values.newPassword);
       
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       
       toast({
         title: t('passwordUpdated'),

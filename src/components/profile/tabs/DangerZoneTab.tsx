@@ -19,7 +19,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { deleteUserAccount } from "@/modules/database/profiles/queries";
 import { toast } from "@/hooks/use-toast";
 
 export const DangerZoneTab: React.FC = () => {
@@ -44,12 +44,11 @@ export const DangerZoneTab: React.FC = () => {
       setIsDeleting(true);
       setError(null);
 
-      // Fix: Cast the parameter to an explicit type to match what the RPC function expects
-      const { error: deleteError } = await supabase.rpc('delete_user', {
-        user_password: deleteConfirmPassword
-      } as { user_password: string });
+      const result = await deleteUserAccount(deleteConfirmPassword);
 
-      if (deleteError) throw deleteError;
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       
       toast({
         title: t('accountDeleted'),
