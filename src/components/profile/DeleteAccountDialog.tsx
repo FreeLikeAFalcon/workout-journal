@@ -44,7 +44,7 @@ const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       password: '',
-      confirmation: '',
+      confirmation: 'DELETE',
     },
   });
 
@@ -61,7 +61,9 @@ const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({
       }
       
       // Call RPC function to delete user data
-      const { error: rpcError } = await supabase.rpc('delete_user_data');
+      const { error: rpcError } = await supabase.rpc('delete_user_data', {
+        password: values.password
+      });
       
       if (rpcError) {
         throw rpcError;

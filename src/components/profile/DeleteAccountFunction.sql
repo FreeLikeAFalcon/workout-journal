@@ -3,7 +3,7 @@
 -- to allow users to delete their account data
 
 -- Create a function that deletes all user data
-CREATE OR REPLACE FUNCTION public.delete_user_data()
+CREATE OR REPLACE FUNCTION public.delete_user_data(password TEXT DEFAULT NULL)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
