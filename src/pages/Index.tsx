@@ -16,6 +16,7 @@ import WidgetCustomizer from "@/components/ui/WidgetCustomizer";
 import { WidgetType } from "@/types/metrics";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ChartData } from "@/types/workout";
 
 const Index: React.FC = () => {
   const { workouts, isLoading: workoutsLoading, error: workoutsError } = useWorkout();
@@ -34,7 +35,8 @@ const Index: React.FC = () => {
     mostFrequentExercise: { name: '-', count: 0 }
   };
   
-  const chartData = !workoutsLoading && !workoutsError ? prepareChartData(workouts) : [];
+  // Ensure chartData is properly typed
+  const chartData: ChartData = !workoutsLoading && !workoutsError ? prepareChartData(workouts) : {};
   
   // Only process widgets if they're loaded and no errors
   const visibleWidgets = !metricsLoading && !metricsError && widgets

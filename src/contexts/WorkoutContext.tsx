@@ -6,6 +6,8 @@ import { toast } from "@/hooks/use-toast";
 
 interface WorkoutContextType {
   workouts: Workout[];
+  isLoading: boolean;
+  error: Error | null;
   addWorkout: (workout: Omit<Workout, "id">) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   updateWorkout: (workout: Workout) => Promise<void>;
@@ -22,6 +24,7 @@ const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     workouts,
+    isLoading,
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout: updateWorkoutHook,
@@ -76,8 +79,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
+  // Added error property with default value null
+  const error = null;
+  
   const workoutManager: WorkoutContextType = {
     workouts,
+    isLoading,
+    error,
     addWorkout: addWorkoutHook,
     deleteWorkout: deleteWorkoutHook,
     updateWorkout,
