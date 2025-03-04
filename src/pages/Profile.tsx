@@ -4,9 +4,11 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { User, PenSquare, Weight, Mail, UserCircle } from "lucide-react";
+import { User, PenSquare, Weight, Mail, UserCircle, AtSign } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import EditProfileDialog from "@/components/profile/EditProfileDialog";
+import ChangeEmailDialog from "@/components/profile/ChangeEmailDialog";
+import DangerZoneCard from "@/components/profile/DangerZoneCard";
 import { useMetrics } from "@/contexts/MetricsContext";
 
 const Profile: React.FC = () => {
@@ -14,6 +16,7 @@ const Profile: React.FC = () => {
   const { t } = useLanguage();
   const { getLatestMetricValue } = useMetrics();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   
   // Get the latest weight value from metrics if available
   const currentWeight = getLatestMetricValue("weight");
@@ -43,6 +46,15 @@ const Profile: React.FC = () => {
                 icon={<Mail />} 
                 label={t('email')} 
                 value={user?.email || t('notSet')} 
+                action={
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsEmailDialogOpen(true)}
+                  >
+                    <AtSign className="size-4" />
+                  </Button>
+                }
               />
               
               <ProfileField 
@@ -64,6 +76,9 @@ const Profile: React.FC = () => {
             </Button>
           </CardFooter>
         </Card>
+        
+        {/* Danger Zone Card */}
+        <DangerZoneCard />
       </div>
       
       {isEditDialogOpen && (
@@ -76,6 +91,13 @@ const Profile: React.FC = () => {
           }}
         />
       )}
+      
+      {isEmailDialogOpen && (
+        <ChangeEmailDialog
+          open={isEmailDialogOpen}
+          onOpenChange={setIsEmailDialogOpen}
+        />
+      )}
     </Layout>
   );
 };
@@ -84,17 +106,23 @@ interface ProfileFieldProps {
   icon: React.ReactNode;
   label: string;
   value: string;
+  action?: React.ReactNode;
 }
 
-const ProfileField: React.FC<ProfileFieldProps> = ({ icon, label, value }) => (
+const ProfileField: React.FC<ProfileFieldProps> = ({ icon, label, value, action }) => (
   <div className="flex items-center p-3 rounded-lg border border-border/40 bg-background/50">
     <div className="mr-3 text-muted-foreground">
       {icon}
     </div>
-    <div>
+    <div className="flex-1">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="font-medium">{value}</p>
     </div>
+    {action && (
+      <div>
+        {action}
+      </div>
+    )}
   </div>
 );
 
