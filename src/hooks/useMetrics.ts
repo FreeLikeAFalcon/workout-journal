@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { BodyMetrics, WidgetConfig } from "@/types/metrics";
 import { 
@@ -15,19 +16,26 @@ export const useMetrics = () => {
   const [metrics, setMetrics] = useState<BodyMetrics | null>(null);
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   // Fetch metrics and widgets data
   useEffect(() => {
     const loadData = async () => {
       if (!user) {
-        setMetrics(null);
-        setWidgets([]);
+        // If no user, initialize with empty data
+        const emptyMetrics = transformMetricsData([], []);
+        const defaultWidgets = transformWidgetsData([]);
+        
+        setMetrics(emptyMetrics);
+        setWidgets(defaultWidgets);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setError(null);
+      
       try {
         // Fetch metrics data
         const metricsData = await fetchMetrics();
@@ -38,8 +46,17 @@ export const useMetrics = () => {
         const widgetsData = await fetchWidgets();
         const transformedWidgets = transformWidgetsData(widgetsData);
         setWidgets(transformedWidgets);
-      } catch (error) {
-        console.error("Error loading metrics data:", error);
+      } catch (err: any) {
+        console.error("Error loading metrics data:", err);
+        setError(err);
+        
+        // Still initialize with empty data on error
+        const emptyMetrics = transformMetricsData([], []);
+        const defaultWidgets = transformWidgetsData([]);
+        
+        setMetrics(emptyMetrics);
+        setWidgets(defaultWidgets);
+        
         toast({
           title: "Error",
           description: "Failed to load metrics data",
@@ -219,6 +236,7 @@ export const useMetrics = () => {
     metrics,
     widgets,
     isLoading,
+    error,
     addMetric,
     deleteMetric,
     setGoal,

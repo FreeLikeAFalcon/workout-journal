@@ -7,6 +7,7 @@ interface MetricsContextType {
   metrics: BodyMetrics | null;
   widgets: WidgetConfig[];
   isLoading: boolean;
+  error: Error | null;
   addMetric: (data: { type: keyof BodyMetrics; value: number; date: string }) => Promise<void>;
   deleteMetric: (type: keyof BodyMetrics, id: string) => Promise<void>;
   setGoal: (type: keyof BodyMetrics, goal: { target: number; deadline?: string }) => Promise<void>;
@@ -21,6 +22,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     metrics,
     widgets,
     isLoading,
+    error,
     addMetric,
     deleteMetric,
     setGoal,
@@ -34,6 +36,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         metrics,
         widgets,
         isLoading,
+        error,
         addMetric,
         deleteMetric,
         setGoal,

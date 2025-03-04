@@ -3,14 +3,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { BodyMetrics, WidgetConfig } from '@/types/metrics';
 
 export const fetchMetrics = async () => {
+  // Get the current user first
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error('Error getting user:', userError);
+    return { metrics: [], goals: [] };
+  }
+  
+  const userId = userData.user?.id;
+  
+  if (!userId) {
+    console.log('No user ID available for metrics fetch');
+    return { metrics: [], goals: [] };
+  }
+
   const { data: metricsData, error: metricsError } = await supabase
     .from('body_metrics')
     .select('*')
+    .eq('user_id', userId)
     .order('date', { ascending: false });
 
   const { data: goalsData, error: goalsError } = await supabase
     .from('body_goals')
-    .select('*');
+    .select('*')
+    .eq('user_id', userId);
 
   if (metricsError) {
     console.error('Error fetching metrics:', metricsError);
@@ -63,11 +80,26 @@ export const addMetricEntry = async (data: { type: string; value: number; date: 
 };
 
 export const updateMetricGoal = async (type: string, goal: { target: number; deadline?: string }) => {
+  // Get the current user first
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error('Error getting user:', userError);
+    throw new Error('Failed to authenticate user');
+  }
+  
+  const userId = userData.user?.id;
+  
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+
   // First check if the goal exists
   const { data: existingGoal } = await supabase
     .from('body_goals')
     .select('id')
     .eq('metric_type', type)
+    .eq('user_id', userId)
     .maybeSingle();
 
   if (existingGoal) {
@@ -78,7 +110,8 @@ export const updateMetricGoal = async (type: string, goal: { target: number; dea
         target: goal.target,
         deadline: goal.deadline,
       })
-      .eq('id', existingGoal.id);
+      .eq('id', existingGoal.id)
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error updating goal:', error);
@@ -86,14 +119,13 @@ export const updateMetricGoal = async (type: string, goal: { target: number; dea
     }
   } else {
     // Create new goal
-    const { data: user } = await supabase.auth.getUser();
     const { error } = await supabase
       .from('body_goals')
       .insert({
         metric_type: type,
         target: goal.target,
         deadline: goal.deadline,
-        user_id: user.user?.id
+        user_id: userId
       });
 
     if (error) {
@@ -106,9 +138,25 @@ export const updateMetricGoal = async (type: string, goal: { target: number; dea
 };
 
 export const fetchWidgets = async () => {
+  // Get the current user first
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error('Error getting user:', userError);
+    return [];
+  }
+  
+  const userId = userData.user?.id;
+  
+  if (!userId) {
+    console.log('No user ID available for widgets fetch');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('widget_configs')
     .select('*')
+    .eq('user_id', userId)
     .order('position', { ascending: true });
 
   if (error) {
@@ -121,13 +169,24 @@ export const fetchWidgets = async () => {
 
 export const updateWidgets = async (widgets: WidgetConfig[]): Promise<{ success: boolean; error?: string }> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('Failed to authenticate user');
+    }
+    
+    const userId = userData.user?.id;
+    
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
     
     // First delete all widgets for the user
     const { error: deleteError } = await supabase
       .from('widget_configs')
       .delete()
-      .eq('user_id', user.user?.id);
+      .eq('user_id', userId);
 
     if (deleteError) {
       console.error('Error deleting widgets:', deleteError);
@@ -142,7 +201,7 @@ export const updateWidgets = async (widgets: WidgetConfig[]): Promise<{ success:
         type: w.type,
         position: w.position,
         visible: w.visible,
-        user_id: user.user?.id
+        user_id: userId
       })));
 
     if (insertError) {
