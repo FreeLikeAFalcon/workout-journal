@@ -51,7 +51,6 @@ const DangerTab: React.FC<DangerTabProps> = ({ onSuccess }) => {
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Fix the type error by explicitly typing the value as string
     const value = e.target.value;
     setPassword(value);
   };

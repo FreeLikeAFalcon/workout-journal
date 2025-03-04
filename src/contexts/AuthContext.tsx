@@ -19,6 +19,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string, redirectTo: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   loading: boolean;
   isEmailConfirmed: boolean;
 };
@@ -219,6 +220,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAccount = async (password: string) => {
+    try {
+      setLoading(true);
+      
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password,
+      });
+
+      if (signInError) {
+        toast({
+          title: "Fehler bei der Authentifizierung",
+          description: "Das angegebene Passwort ist falsch.",
+          variant: "destructive",
+        });
+        throw signInError;
+      }
+
+      const { error: deleteError } = await supabase.rpc('delete_user', {
+        user_password: password
+      });
+
+      if (deleteError) {
+        toast({
+          title: "Fehler beim Löschen des Kontos",
+          description: deleteError.message,
+          variant: "destructive",
+        });
+        throw deleteError;
+      }
+
+      await supabase.auth.signOut();
+      
+      toast({
+        title: "Konto gelöscht",
+        description: "Dein Konto wurde erfolgreich gelöscht.",
+      });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -229,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         resetPassword,
+        deleteAccount,
         loading,
         isEmailConfirmed,
       }}
