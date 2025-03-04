@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Workout, Exercise, Set, WorkoutStats, ChartData } from "@/types/workout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +8,6 @@ import {
   addWorkout as addWorkoutDb, 
   updateWorkout as updateWorkoutDb,
   deleteWorkout as deleteWorkoutDb,
-  fetchWorkoutById
 } from "@/modules/database/workouts/queries";
 import { generateId, calculateWorkoutStats, prepareChartData } from "@/utils/workoutUtils";
 
@@ -69,11 +69,17 @@ export const useWorkouts = (): UseWorkoutsReturn => {
   const addWorkout = async (workout: Omit<Workout, "id">): Promise<void> => {
     try {
       setIsLoading(true);
-      const newWorkout: Workout = { ...workout, id: generateId(), user_id: user?.id };
+      // Create a new workout with a generated ID
+      const newWorkout: Workout = { 
+        ...workout, 
+        id: generateId()
+      };
+      
+      // Optimistic update
       setWorkouts(currentWorkouts => [...currentWorkouts, newWorkout]);
       
-      // Fix: add user_id parameter
-      const result = await addWorkoutDb(newWorkout, user?.id || '');
+      // Send to database
+      const result = await addWorkoutDb(newWorkout);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
@@ -102,15 +108,16 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const updateWorkout = async (id: string, workout: Partial<Workout>): Promise<void> => {
     try {
+      // Optimistic update
       const updatedWorkouts = workouts.map(w => w.id === id ? { ...w, ...workout } : w);
       setWorkouts(updatedWorkouts);
       
-      // Fix: add workout id parameter
+      // Send to database
       const result = await updateWorkoutDb(id, workout);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(id);
+        const originalWorkout = workouts.find(w => w.id === id);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === id ? originalWorkout : w)
@@ -138,16 +145,17 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const deleteWorkout = async (id: string): Promise<void> => {
     try {
+      // Optimistic delete
+      const workoutToDelete = workouts.find(w => w.id === id);
       setWorkouts(currentWorkouts => currentWorkouts.filter(w => w.id !== id));
       
-      // Fix: add parameter for user_id
-      const result = await deleteWorkoutDb(id, user?.id || '');
+      // Send to database
+      const result = await deleteWorkoutDb(id);
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(id);
-        if (originalWorkout) {
-          setWorkouts(currentWorkouts => [...currentWorkouts, originalWorkout]);
+        if (workoutToDelete) {
+          setWorkouts(currentWorkouts => [...currentWorkouts, workoutToDelete]);
         }
         throw new Error(result.error);
       }
@@ -179,14 +187,21 @@ export const useWorkouts = (): UseWorkoutsReturn => {
         return workout;
       });
 
+      // Optimistic update
       setWorkouts(updatedWorkouts);
       
-      // Fix: add exerciseId parameter
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, newExercise.id);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
@@ -209,6 +224,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const updateExercise = async (workoutId: string, exerciseId: string, exercise: Partial<Exercise>): Promise<void> => {
     try {
+      // Optimistic update
       const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
@@ -226,12 +242,18 @@ export const useWorkouts = (): UseWorkoutsReturn => {
 
       setWorkouts(updatedWorkouts);
       
-      // Fix: add exerciseId parameter
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
@@ -254,6 +276,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const deleteExercise = async (workoutId: string, exerciseId: string): Promise<void> => {
     try {
+      // Optimistic update
       const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
@@ -266,12 +289,18 @@ export const useWorkouts = (): UseWorkoutsReturn => {
 
       setWorkouts(updatedWorkouts);
       
-      // Fix: add both workoutId and exerciseId parameters
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
@@ -295,13 +324,17 @@ export const useWorkouts = (): UseWorkoutsReturn => {
   const addSet = async (workoutId: string, exerciseId: string, set: Omit<Set, "id">): Promise<void> => {
     try {
       const newSet: Set = { ...set, id: generateId() };
+      // Optimistic update
       const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
             ...workout,
             exercises: workout.exercises.map(exercise => {
               if (exercise.id === exerciseId) {
-                return { ...exercise, sets: [...exercise.sets, newSet] };
+                return { 
+                  ...exercise, 
+                  sets: [...exercise.sets, newSet] 
+                };
               }
               return exercise;
             }),
@@ -309,14 +342,21 @@ export const useWorkouts = (): UseWorkoutsReturn => {
         }
         return workout;
       });
+      
       setWorkouts(updatedWorkouts);
       
-      // Fix: add setId parameter
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, newSet.id);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
@@ -339,6 +379,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const updateSet = async (workoutId: string, exerciseId: string, setId: string, set: Partial<Set>): Promise<void> => {
     try {
+      // Optimistic update
       const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
@@ -361,14 +402,21 @@ export const useWorkouts = (): UseWorkoutsReturn => {
         }
         return workout;
       });
+      
       setWorkouts(updatedWorkouts);
       
-      // Fix: add setId parameter
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, setId);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)
@@ -391,6 +439,7 @@ export const useWorkouts = (): UseWorkoutsReturn => {
    */
   const deleteSet = async (workoutId: string, exerciseId: string, setId: string): Promise<void> => {
     try {
+      // Optimistic update
       const updatedWorkouts = workouts.map(workout => {
         if (workout.id === workoutId) {
           return {
@@ -408,14 +457,21 @@ export const useWorkouts = (): UseWorkoutsReturn => {
         }
         return workout;
       });
+      
       setWorkouts(updatedWorkouts);
       
-      // Fix: add setId parameter
-      const result = await updateWorkoutDb(workoutId, { exercises: updatedWorkouts.find(w => w.id === workoutId)?.exercises }, exerciseId, setId);
+      // Find the updated workout to pass to the API
+      const workoutToUpdate = updatedWorkouts.find(w => w.id === workoutId);
+      if (!workoutToUpdate) throw new Error("Workout not found");
+      
+      // Send to database
+      const result = await updateWorkoutDb(workoutId, { 
+        exercises: workoutToUpdate.exercises 
+      });
       
       if (!result.success) {
         // Revert the optimistic update if the API call fails
-        const originalWorkout = await fetchWorkoutById(workoutId);
+        const originalWorkout = workouts.find(w => w.id === workoutId);
         if (originalWorkout) {
           setWorkouts(currentWorkouts => 
             currentWorkouts.map(w => w.id === workoutId ? originalWorkout : w)

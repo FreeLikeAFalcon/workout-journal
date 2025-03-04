@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext } from "react";
-import { Exercise, Set, Workout } from "@/modules/database/workouts/types";
+import { Exercise, Set, Workout } from "@/types/workout";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
 interface WorkoutContextType {
@@ -19,7 +19,61 @@ interface WorkoutContextType {
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const workoutManager = useWorkouts();
+  const {
+    workouts,
+    addWorkout: addWorkoutHook,
+    deleteWorkout: deleteWorkoutHook,
+    updateWorkout: updateWorkoutHook,
+    addExercise,
+    deleteExercise,
+    addSet,
+    deleteSet,
+    updateSet: updateSetHook,
+  } = useWorkouts();
+  
+  // Create adapter functions to match the expected interface
+  const addExerciseToWorkout = async (workoutId: string, exercise: Omit<Exercise, "id">) => {
+    return addExercise(workoutId, exercise);
+  };
+  
+  const removeExerciseFromWorkout = async (workoutId: string, exerciseId: string) => {
+    return deleteExercise(workoutId, exerciseId);
+  };
+  
+  const addSetToExercise = async (workoutId: string, exerciseId: string, set: Omit<Set, "id">) => {
+    return addSet(workoutId, exerciseId, set);
+  };
+  
+  const removeSetFromExercise = async (workoutId: string, exerciseId: string, setId: string) => {
+    return deleteSet(workoutId, exerciseId, setId);
+  };
+  
+  const updateSet = async (workoutId: string, exerciseId: string, set: Set) => {
+    return updateSetHook(workoutId, exerciseId, set.id, set);
+  };
+  
+  const updateWorkout = async (workout: Workout) => {
+    return updateWorkoutHook(workout.id, workout);
+  };
+  
+  const clearAllWorkouts = async () => {
+    // Implement clear all functionality - for now just log
+    console.log("Clear all workouts - Not implemented yet");
+    return Promise.resolve();
+  };
+  
+  const workoutManager: WorkoutContextType = {
+    workouts,
+    addWorkout: addWorkoutHook,
+    deleteWorkout: deleteWorkoutHook,
+    updateWorkout,
+    clearAllWorkouts,
+    addExerciseToWorkout,
+    removeExerciseFromWorkout,
+    addSetToExercise,
+    removeSetFromExercise,
+    updateSet,
+  };
   
   return (
     <WorkoutContext.Provider value={workoutManager}>

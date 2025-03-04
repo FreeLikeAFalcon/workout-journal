@@ -1,259 +1,132 @@
 
-import React, { useState, useMemo } from "react";
-import { Workout } from "@/types/workout";
-import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord, lbsToKg } from "@/utils/workoutUtils";
+import React, { useState } from "react";
 import { useWorkout } from "@/contexts/WorkoutContext";
-import { Calendar, ChevronDown, ChevronUp, Dumbbell, Trash, Filter, FolderOpen, FolderClosed } from "lucide-react";
+import { Exercise, Workout } from "@/types/workout";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { formatDate, findPreviousExercise, isPersonalRecord } from "@/utils/workoutUtils";
 import ExerciseItem from "./ExerciseItem";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Edit2, Trash } from "lucide-react";
+import { Button } from "../ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 
 const WorkoutList: React.FC = () => {
-  const { workouts, deleteWorkout } = useWorkout();
-  const [expandedWorkouts, setExpandedWorkouts] = useState<Record<string, boolean>>({});
-  const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({});
-  const [filters, setFilters] = useState({
-    program: "",
-    phase: "",
-    startDate: "",
-    endDate: "",
-  });
-  const [groupBy, setGroupBy] = useState<"date" | "program">("date");
-
-  // Extract all unique programs and phases for filter dropdowns
-  const { programs, phases } = useMemo(() => {
-    const programsSet = new Set<string>();
-    const phasesSet = new Set<string>();
-    
-    workouts.forEach(workout => {
-      programsSet.add(workout.program);
-      phasesSet.add(workout.phase);
-    });
-    
-    return {
-      programs: Array.from(programsSet),
-      phases: Array.from(phasesSet)
-    };
-  }, [workouts]);
+  const { workouts, deleteWorkout, addSetToExercise, removeSetFromExercise, updateSet, removeExerciseFromWorkout } = useWorkout();
+  const { t } = useLanguage();
+  const [expandedWorkouts, setExpandedWorkouts] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
 
   // Sort workouts by date (newest first)
   const sortedWorkouts = [...workouts].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // Apply filters
-  const filteredWorkouts = sortedWorkouts.filter(workout => {
-    const matchesProgram = !filters.program || workout.program === filters.program;
-    const matchesPhase = !filters.phase || workout.phase === filters.phase;
-    
-    let matchesDate = true;
-    if (filters.startDate) {
-      const workoutDate = new Date(workout.date);
-      const startDate = new Date(filters.startDate);
-      matchesDate = workoutDate >= startDate;
-    }
-    
-    if (filters.endDate && matchesDate) {
-      const workoutDate = new Date(workout.date);
-      const endDate = new Date(filters.endDate);
-      // Set the end date to the end of the day
-      endDate.setHours(23, 59, 59, 999);
-      matchesDate = workoutDate <= endDate;
-    }
-    
-    return matchesProgram && matchesPhase && matchesDate;
-  });
-
-  const toggleWorkout = (workoutId: string) => {
-    setExpandedWorkouts((prev) => ({
-      ...prev,
-      [workoutId]: !prev[workoutId],
-    }));
+  const toggleEditMode = (workoutId: string) => {
+    setEditMode(editMode === workoutId ? null : workoutId);
   };
-
-  const toggleProgram = (program: string) => {
-    setExpandedPrograms((prev) => ({
-      ...prev,
-      [program]: !prev[program],
-    }));
+  
+  const handleDeleteWorkout = (workoutId: string) => {
+    setDeleteDialog(workoutId);
   };
-
-  const resetFilters = () => {
-    setFilters({
-      program: "",
-      phase: "",
-      startDate: "",
-      endDate: "",
-    });
+  
+  const confirmDelete = async () => {
+    if (deleteDialog) {
+      await deleteWorkout(deleteDialog);
+      setDeleteDialog(null);
+    }
   };
-
-  // Group workouts by month (for date grouping)
-  const workoutsByMonth: Record<string, Workout[]> = {};
-  filteredWorkouts.forEach(workout => {
-    const date = new Date(workout.date);
-    const monthYear = date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    
-    if (!workoutsByMonth[monthYear]) {
-      workoutsByMonth[monthYear] = [];
-    }
-    
-    workoutsByMonth[monthYear].push(workout);
-  });
-
-  // Group workouts by program
-  const workoutsByProgram: Record<string, Workout[]> = {};
-  filteredWorkouts.forEach(workout => {
-    if (!workoutsByProgram[workout.program]) {
-      workoutsByProgram[workout.program] = [];
-    }
-    
-    workoutsByProgram[workout.program].push(workout);
-  });
-
-  if (workouts.length === 0) {
-    return (
-      <div className="glass-card rounded-xl p-8 text-center animate-fade-in">
-        <Dumbbell size={40} className="mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">Noch keine Workouts</h3>
-        <p className="text-muted-foreground">
-          Beginne mit dem Tracking deiner Workouts, um deinen Fortschritt zu verfolgen.
-        </p>
-      </div>
+  
+  const handleDeleteExercise = async (workoutId: string, exerciseId: string) => {
+    await removeExerciseFromWorkout(workoutId, exerciseId);
+  };
+  
+  const handleAddSet = async (workoutId: string, exerciseId: string, set: { reps: number, weight: number }) => {
+    await addSetToExercise(workoutId, exerciseId, set);
+  };
+  
+  const handleRemoveSet = async (workoutId: string, exerciseId: string, setId: string) => {
+    await removeSetFromExercise(workoutId, exerciseId, setId);
+  };
+  
+  const handleUpdateSet = async (workoutId: string, exerciseId: string, setId: string, newSet: { reps: number, weight: number }) => {
+    await updateSet(workoutId, exerciseId, { id: setId, ...newSet });
+  };
+  
+  const toggleWorkoutExpansion = (workoutId: string) => {
+    setExpandedWorkouts(prevExpanded => 
+      prevExpanded.includes(workoutId) 
+        ? prevExpanded.filter(id => id !== workoutId) 
+        : [...prevExpanded, workoutId]
     );
-  }
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Filters */}
-      <div className="glass-card rounded-xl p-4 mb-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={18} />
-          <h3 className="font-medium">Filter</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">Programm</label>
-            <select
-              value={filters.program}
-              onChange={(e) => setFilters({ ...filters, program: e.target.value })}
-              className="w-full p-2 border border-input rounded-lg bg-transparent"
-            >
-              <option value="">Alle Programme</option>
-              {programs.map(program => (
-                <option key={program} value={program}>{program}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">Phase</label>
-            <select
-              value={filters.phase}
-              onChange={(e) => setFilters({ ...filters, phase: e.target.value })}
-              className="w-full p-2 border border-input rounded-lg bg-transparent"
-            >
-              <option value="">Alle Phasen</option>
-              {phases.map(phase => (
-                <option key={phase} value={phase}>{phase}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">Von Datum</label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="w-full p-2 border border-input rounded-lg bg-transparent"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">Bis Datum</label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="w-full p-2 border border-input rounded-lg bg-transparent"
-            />
-          </div>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Gruppieren nach:</label>
-            <select
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as "date" | "program")}
-              className="p-1 border border-input rounded-lg bg-transparent"
-            >
-              <option value="date">Datum</option>
-              <option value="program">Programm</option>
-            </select>
-          </div>
-          
-          <button
-            onClick={resetFilters}
-            className="text-sm text-accent hover:text-accent/80 transition-colors"
-          >
-            Filter zurücksetzen
-          </button>
-        </div>
-      </div>
-      
-      {/* Workouts grouped by date */}
-      {groupBy === "date" && Object.entries(workoutsByMonth).map(([monthYear, monthWorkouts]) => (
-        <div key={monthYear}>
-          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-muted-foreground" />
-            {monthYear}
-          </h3>
-          
-          <div className="space-y-4">
-            {monthWorkouts.map((workout) => (
-              <div key={workout.id} className="glass-card rounded-xl overflow-hidden">
-                <div
-                  className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 cursor-pointer"
-                  onClick={() => toggleWorkout(workout.id)}
-                >
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {formatDate(workout.date)}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {workout.program} • {workout.phase}
-                      </span>
+    <div className="space-y-6">
+      {sortedWorkouts.length === 0 ? (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-muted-foreground">
+              <p>{t('workout.noWorkouts')}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={[]} value={expandedWorkouts} className="space-y-4">
+          {sortedWorkouts.map((workout) => (
+            <AccordionItem key={workout.id} value={workout.id} className="border border-border rounded-md overflow-hidden">
+              <div className="flex justify-between items-center p-4">
+                <div className="flex-1">
+                  <AccordionTrigger 
+                    onClick={() => toggleWorkoutExpansion(workout.id)} 
+                    className="hover:no-underline py-0 [&[data-state=open]>svg]:rotate-180"
+                  >
+                    <div className="flex flex-col items-start">
+                      <h3 className="text-lg font-semibold">{workout.program}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{formatDate(workout.date)}</span>
+                        <span>•</span>
+                        <span>{workout.phase}</span>
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {lbsToKg(calculateWorkoutVolume(workout)).toFixed(1)} kg Gesamtvolumen
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteWorkout(workout.id);
-                      }}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                    >
-                      <Trash size={16} />
-                    </button>
-                    
-                    {expandedWorkouts[workout.id] ? (
-                      <ChevronUp size={18} />
-                    ) : (
-                      <ChevronDown size={18} />
-                    )}
-                  </div>
+                  </AccordionTrigger>
                 </div>
-                
-                {expandedWorkouts[workout.id] && (
-                  <div className="border-t border-border p-4">
-                    {workout.exercises.map((exercise) => {
-                      const prevExercise = findPreviousExercise(exercise.name, workouts);
-                      const isPR = isPersonalRecord(exercise, prevExercise);
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleEditMode(workout.id);
+                    }}
+                  >
+                    <Edit2 size={16} />
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWorkout(workout.id);
+                    }}
+                  >
+                    <Trash size={16} />
+                  </Button>
+                </div>
+              </div>
+              
+              <AccordionContent className="pb-4 px-4">
+                <div className="space-y-4 mt-2">
+                  {workout.exercises.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      <p>{t('workout.noExercises')}</p>
+                    </div>
+                  ) : (
+                    workout.exercises.map((exercise: Exercise) => {
+                      // Find previous exercise for comparison (if any)
+                      const previousExercise = findPreviousExercise(exercise.name, workouts);
+                      const isPR = previousExercise ? isPersonalRecord(exercise, previousExercise) : false;
                       
                       return (
                         <ExerciseItem
@@ -261,101 +134,39 @@ const WorkoutList: React.FC = () => {
                           exercise={exercise}
                           workoutId={workout.id}
                           isPersonalRecord={isPR}
+                          isEditMode={editMode === workout.id}
+                          onRemoveExercise={() => handleDeleteExercise(workout.id, exercise.id)}
+                          onAddSet={(set) => handleAddSet(workout.id, exercise.id, set)}
+                          onRemoveSet={(setId) => handleRemoveSet(workout.id, exercise.id, setId)}
+                          onUpdateSet={(setId, newSet) => handleUpdateSet(workout.id, exercise.id, setId, newSet)}
                         />
                       );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+                    })
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
       
-      {/* Workouts grouped by program */}
-      {groupBy === "program" && Object.entries(workoutsByProgram).map(([programName, programWorkouts]) => (
-        <div key={programName} className="glass-card rounded-xl overflow-hidden mb-4">
-          <div
-            className="p-4 flex justify-between items-center cursor-pointer bg-secondary/30"
-            onClick={() => toggleProgram(programName)}
-          >
-            <div className="flex items-center gap-2">
-              {expandedPrograms[programName] ? <FolderOpen size={18} /> : <FolderClosed size={18} />}
-              <h3 className="font-medium">{programName}</h3>
-              <span className="text-sm text-muted-foreground">
-                ({programWorkouts.length} Workouts)
-              </span>
-            </div>
-            
-            {expandedPrograms[programName] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </div>
-          
-          {expandedPrograms[programName] && (
-            <div className="p-4">
-              <div className="space-y-4">
-                {programWorkouts.map((workout) => (
-                  <div key={workout.id} className="glass-card rounded-xl overflow-hidden">
-                    <div
-                      className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 cursor-pointer"
-                      onClick={() => toggleWorkout(workout.id)}
-                    >
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {formatDate(workout.date)}
-                          </span>
-                          <span className="text-sm text-accent font-medium">
-                            {workout.phase}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {lbsToKg(calculateWorkoutVolume(workout)).toFixed(1)} kg Gesamtvolumen
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteWorkout(workout.id);
-                          }}
-                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                        >
-                          <Trash size={16} />
-                        </button>
-                        
-                        {expandedWorkouts[workout.id] ? (
-                          <ChevronUp size={18} />
-                        ) : (
-                          <ChevronDown size={18} />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {expandedWorkouts[workout.id] && (
-                      <div className="border-t border-border p-4">
-                        {workout.exercises.map((exercise) => {
-                          const prevExercise = findPreviousExercise(exercise.name, workouts);
-                          const isPR = isPersonalRecord(exercise, prevExercise);
-                          
-                          return (
-                            <ExerciseItem
-                              key={exercise.id}
-                              exercise={exercise}
-                              workoutId={workout.id}
-                              isPersonalRecord={isPR}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Confirm delete dialog */}
+      <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('workout.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('workout.deleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
