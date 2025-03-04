@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -120,7 +121,9 @@ const Auth: React.FC = () => {
     
     try {
       setFormLoading(true);
-      const redirectUrl = window.location.origin + '/auth?tab=login';
+      // Use the full URL with origin to ensure proper redirection
+      const redirectUrl = `${window.location.origin}/auth?tab=login`;
+      console.log("Using redirect URL:", redirectUrl);
       await resetPassword(email, redirectUrl);
       setResetSent(true);
       toast({
