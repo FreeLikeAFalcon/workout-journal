@@ -278,7 +278,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                           placeholder={t('enterWeight')} 
                           onChange={(e) => {
                             const value = e.target.value;
-                            field.onChange(value === '' ? undefined : value ? parseFloat(value) : undefined);
+                            field.onChange(value === '' ? undefined : Number(value));
                           }}
                           value={field.value ?? ''}
                         />
