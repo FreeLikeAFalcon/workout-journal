@@ -22,11 +22,14 @@ const Index: React.FC = () => {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const { t } = useLanguage();
   
-  const stats = calculateWorkoutStats(workouts);
-  const chartData = prepareChartData(workouts);
+  // Make sure workouts is an array even if it's undefined
+  const safeWorkouts = Array.isArray(workouts) ? workouts : [];
+  const stats = calculateWorkoutStats(safeWorkouts);
+  const chartData = prepareChartData(safeWorkouts);
   
   // Get visible widgets sorted by position - ensure we ONLY show widgets that are marked as visible
-  const visibleWidgets = widgets
+  const safeWidgets = Array.isArray(widgets) ? widgets : [];
+  const visibleWidgets = safeWidgets
     .filter(widget => widget.visible === true)
     .sort((a, b) => a.position - b.position);
   
@@ -61,7 +64,7 @@ const Index: React.FC = () => {
         return (
           <StatCard
             title={t('exercise.mostFrequent')}
-            value={stats.mostFrequentExercise.name}
+            value={stats.mostFrequentExercise?.name || t('none')}
             icon={<Target size={20} />}
           />
         );
@@ -110,7 +113,7 @@ const Index: React.FC = () => {
         <MetricsForm />
         
         {/* Progress Chart */}
-        {workouts.length > 0 ? (
+        {safeWorkouts.length > 0 ? (
           <ProgressChart chartData={chartData} />
         ) : (
           <div className="glass-card rounded-xl p-8 text-center">

@@ -22,43 +22,63 @@ const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
       fetchWorkouts();
     } else {
-      const savedWorkouts = localStorage.getItem("workouts");
-      if (savedWorkouts) {
-        try {
-          setWorkouts(JSON.parse(savedWorkouts));
-        } catch (error) {
-          console.error("Failed to parse workouts from localStorage:", error);
+      try {
+        const savedWorkouts = localStorage.getItem("workouts");
+        if (savedWorkouts) {
+          const parsedWorkouts = JSON.parse(savedWorkouts);
+          if (Array.isArray(parsedWorkouts)) {
+            setWorkouts(parsedWorkouts);
+          } else {
+            console.error("Invalid workouts data in localStorage");
+            setWorkouts(createSampleWorkouts());
+          }
+        } else {
           setWorkouts(createSampleWorkouts());
         }
-      } else {
+      } catch (error) {
+        console.error("Failed to parse workouts from localStorage:", error);
         setWorkouts(createSampleWorkouts());
+      } finally {
+        setIsLoading(false);
       }
     }
   }, [user]);
 
   useEffect(() => {
-    if (!user && workouts.length > 0) {
+    if (!user && workouts.length > 0 && !isLoading) {
       localStorage.setItem("workouts", JSON.stringify(workouts));
     }
-  }, [workouts, user]);
+  }, [workouts, user, isLoading]);
 
   const fetchWorkouts = async () => {
+    setIsLoading(true);
     try {
       console.log("Fetching workouts for user:", user?.id);
+      
+      if (!user?.id) {
+        console.error("No user ID available");
+        setWorkouts([]);
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (workoutsError) {
         console.error("Error fetching workouts:", workoutsError);
+        setWorkouts([]);
+        setIsLoading(false);
         return;
       }
 
@@ -74,11 +94,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             user_id: user.id
           }));
           await saveWorkoutsToDatabase(sampleWorkouts);
+          setIsLoading(false);
           return; // saveWorkoutsToDatabase will call fetchWorkouts again
         }
       }
 
-      const fullWorkouts = await Promise.all(fetchedWorkouts.map(async (workout) => {
+      const fullWorkouts: Workout[] = [];
+      
+      for (const workout of fetchedWorkouts) {
         try {
           const { data: exercisesData, error: exercisesError } = await supabase
             .from('exercises')
@@ -87,18 +110,21 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
           if (exercisesError) {
             console.error("Error fetching exercises:", exercisesError);
-            return {
+            fullWorkouts.push({
               id: workout.id,
               date: workout.date,
               program: workout.program,
               phase: workout.phase,
               exercises: []
-            };
+            });
+            continue;
           }
 
           const exercises = exercisesData || [];
           
-          const exercisesWithSets = await Promise.all(exercises.map(async (exercise) => {
+          const exercisesWithSets = [];
+          
+          for (const exercise of exercises) {
             try {
               const { data: setsData, error: setsError } = await supabase
                 .from('sets')
@@ -107,16 +133,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
               if (setsError) {
                 console.error("Error fetching sets:", setsError);
-                return {
+                exercisesWithSets.push({
                   id: exercise.id,
                   name: exercise.name,
                   sets: []
-                };
+                });
+                continue;
               }
 
               const sets = setsData || [];
               
-              return {
+              exercisesWithSets.push({
                 id: exercise.id,
                 name: exercise.name,
                 sets: sets.map(set => ({
@@ -124,41 +151,43 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   reps: set.reps,
                   weight: parseFloat(set.weight as unknown as string)
                 }))
-              };
+              });
             } catch (exerciseError) {
               console.error("Error processing exercise:", exerciseError);
-              return {
+              exercisesWithSets.push({
                 id: exercise.id,
                 name: exercise.name,
                 sets: []
-              };
+              });
             }
-          }));
+          }
 
-          return {
+          fullWorkouts.push({
             id: workout.id,
             date: workout.date,
             program: workout.program,
             phase: workout.phase,
             exercises: exercisesWithSets
-          };
+          });
         } catch (workoutError) {
           console.error("Error processing workout:", workoutError);
-          return {
+          fullWorkouts.push({
             id: workout.id,
             date: workout.date,
             program: workout.program,
             phase: workout.phase,
             exercises: []
-          };
+          });
         }
-      }));
+      }
 
       console.log("Setting full workouts:", fullWorkouts);
       setWorkouts(fullWorkouts);
     } catch (error) {
       console.error("Error in fetchWorkouts:", error);
       setWorkouts([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -769,7 +798,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateSet,
       }}
     >
-      {children}
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent"></div>
+        </div>
+      ) : (
+        children
+      )}
     </WorkoutContext.Provider>
   );
 };
