@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
@@ -280,7 +281,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (user) {
       try {
-        // First, delete all sets related to exercises in this workout
+        // First, fetch exercises for this workout to get their IDs
         const { data: exercisesData, error: exercisesError } = await supabase
           .from('exercises')
           .select('id')
@@ -288,7 +289,16 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (exercisesError) {
           console.error("Error fetching exercises for deletion:", exercisesError);
-        } else if (exercisesData && exercisesData.length > 0) {
+          toast({
+            title: "Error",
+            description: "Failed to delete workout: couldn't fetch exercises.",
+            variant: "destructive",
+          });
+          fetchWorkouts(); // Reload data to restore UI
+          return;
+        }
+
+        if (exercisesData && exercisesData.length > 0) {
           const exerciseIds = exercisesData.map(e => e.id);
           
           // Delete all sets for these exercises
@@ -299,6 +309,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
           if (setsError) {
             console.error("Error deleting sets:", setsError);
+            toast({
+              title: "Error",
+              description: "Failed to delete workout: couldn't delete sets.",
+              variant: "destructive",
+            });
+            fetchWorkouts(); // Reload data to restore UI
+            return;
           }
           
           // Delete the exercises
@@ -309,6 +326,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
           if (exError) {
             console.error("Error deleting exercises:", exError);
+            toast({
+              title: "Error",
+              description: "Failed to delete workout: couldn't delete exercises.",
+              variant: "destructive",
+            });
+            fetchWorkouts(); // Reload data to restore UI
+            return;
           }
         }
 
@@ -320,37 +344,38 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error deleting workout:", error);
-          // Revert UI if there was an error
-          fetchWorkouts();
           toast({
             title: "Error",
             description: "Failed to delete workout.",
             variant: "destructive",
           });
+          fetchWorkouts(); // Reload data to restore UI
           return;
         }
         
         console.log("Workout successfully deleted");
+        toast({
+          title: "Workout deleted",
+          description: "Your workout has been removed.",
+        });
       } catch (error) {
         console.error("Error in deleteWorkout:", error);
-        // Revert UI if there was an error
-        fetchWorkouts();
         toast({
           title: "Error",
           description: "An unexpected error occurred while deleting workout.",
           variant: "destructive",
         });
-        return;
+        fetchWorkouts(); // Reload data to restore UI
       }
     } else {
-      // For non-authenticated users, just update localStorage
-      localStorage.setItem("workouts", JSON.stringify(workouts.filter(w => w.id !== id)));
+      // For non-authenticated users, update localStorage
+      const updatedWorkouts = workouts.filter(w => w.id !== id);
+      localStorage.setItem("workouts", JSON.stringify(updatedWorkouts));
+      toast({
+        title: "Workout deleted",
+        description: "Your workout has been removed.",
+      });
     }
-
-    toast({
-      title: "Workout deleted",
-      description: "Your workout has been removed.",
-    });
   };
 
   const updateWorkout = async (workout: Workout) => {
