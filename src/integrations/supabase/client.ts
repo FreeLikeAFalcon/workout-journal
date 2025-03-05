@@ -8,15 +8,15 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Define interfaces for RPC parameters to solve TypeScript typing issues
-interface GetPoliciesParams {
+export interface GetPoliciesParams {
   table_name: string;
 }
 
-interface EnableRLSParams {
+export interface EnableRLSParams {
   table_name: string;
 }
 
-interface CreatePolicyParams {
+export interface CreatePolicyParams {
   table_name: string;
   policy_name: string;
   operation: string;
@@ -29,7 +29,7 @@ export const setupWorkoutsRLS = async () => {
   try {
     // Check if the policies already exist
     const { data: policies, error: policiesError } = await supabase
-      .rpc<GetPoliciesParams, any[]>('get_policies', { table_name: 'workouts' });
+      .rpc('get_policies', { table_name: 'workouts' });
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -42,7 +42,7 @@ export const setupWorkoutsRLS = async () => {
       
       // Enable RLS on the workouts table
       const { error: enableError } = await supabase
-        .rpc<EnableRLSParams, any>('enable_rls', { table_name: 'workouts' });
+        .rpc('enable_rls', { table_name: 'workouts' });
       
       if (enableError) {
         console.error('Error enabling RLS:', enableError);
@@ -51,7 +51,7 @@ export const setupWorkoutsRLS = async () => {
       
       // Create policies for CRUD operations
       const { error: selectError } = await supabase
-        .rpc<CreatePolicyParams, any>('create_policy', { 
+        .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can view their own workouts',
           operation: 'SELECT',
@@ -63,7 +63,7 @@ export const setupWorkoutsRLS = async () => {
       }
       
       const { error: insertError } = await supabase
-        .rpc<CreatePolicyParams, any>('create_policy', { 
+        .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can create their own workouts',
           operation: 'INSERT',
@@ -75,7 +75,7 @@ export const setupWorkoutsRLS = async () => {
       }
       
       const { error: updateError } = await supabase
-        .rpc<CreatePolicyParams, any>('create_policy', { 
+        .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can update their own workouts',
           operation: 'UPDATE',
@@ -87,7 +87,7 @@ export const setupWorkoutsRLS = async () => {
       }
       
       const { error: deleteError } = await supabase
-        .rpc<CreatePolicyParams, any>('create_policy', { 
+        .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can delete their own workouts',
           operation: 'DELETE',
