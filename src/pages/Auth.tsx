@@ -154,7 +154,7 @@ const Auth: React.FC = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 transition-colors duration-300">
       <div className="flex items-center gap-2 mb-8">
         <Dumbbell size={32} className="text-accent" />
-        <h1 className="font-display text-3xl font-semibold">Wod-Tracker</h1>
+        <h1 className="font-display text-3xl font-semibold">WOD-Tracker</h1>
       </div>
 
       {showEmailConfirmation ? (

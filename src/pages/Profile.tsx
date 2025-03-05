@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +17,6 @@ const Profile: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   
-  // Get the latest weight value from metrics if available
   const currentWeight = getLatestMetricValue("weight");
 
   return (
@@ -77,7 +75,6 @@ const Profile: React.FC = () => {
           </CardFooter>
         </Card>
         
-        {/* Danger Zone Card */}
         <DangerZoneCard />
       </div>
       

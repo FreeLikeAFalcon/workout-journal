@@ -38,7 +38,7 @@ const Welcome: React.FC = () => {
       <div className="max-w-3xl w-full flex flex-col items-center z-10 animate-fade-in">
         <div className="flex items-center gap-3 mb-8">
           <Dumbbell size={48} className="text-white" />
-          <h1 className="font-display text-5xl font-bold text-white">Wod-Tracker</h1>
+          <h1 className="font-display text-5xl font-bold text-white">WOD-Tracker</h1>
         </div>
         
         <div className="text-center mb-12 relative">
@@ -71,7 +71,7 @@ const Welcome: React.FC = () => {
 
       <footer className="absolute bottom-6 text-white/60 text-sm">
         <div className="flex flex-col items-center">
-          <p>© {new Date().getFullYear()} Wod-Tracker • {t('journey')}</p>
+          <p>© {new Date().getFullYear()} WOD-Tracker • {t('journey')}</p>
           <div className="mt-1">
             <Impressum />
           </div>

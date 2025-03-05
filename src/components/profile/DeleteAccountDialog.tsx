@@ -1,21 +1,15 @@
 
 import React, { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DeleteAccountDialogProps {
   open: boolean;
@@ -23,96 +17,126 @@ interface DeleteAccountDialogProps {
 }
 
 const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({ open, onOpenChange }) => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { t } = useLanguage();
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleDeleteAccount = async () => {
-    setIsLoading(true);
+  const handleDelete = async () => {
+    if (!password) {
+      setError(t('passwordRequired'));
+      return;
+    }
+
+    if (confirmText !== "DELETE") {
+      setError(t('typeDeleteToConfirm'));
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+
     try {
-      // Call the Supabase function to delete user data
-      const { error: rpcError } = await supabase.rpc('delete_user_data', {
-        user_password: password // Changed parameter name to match the expected function parameter
+      // First verify the password is correct
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password
       });
 
-      if (rpcError) {
-        console.error("Error deleting user data:", rpcError);
-        toast({
-          variant: "destructive",
-          title: t('error'),
-          description: t('account.deleteFailed'),
-        });
-        setIsLoading(false);
-        return;
+      if (signInError) {
+        throw new Error(t('incorrectPassword'));
       }
 
-      // Use the client-side method to delete the user account
-      const { error: deleteError } = await supabase.auth.updateUser({
-        password: password, // Need to provide the password for sensitive operations
-        data: { delete_user: true } // This is a custom flag we'll use in our SQL function
+      // Set custom claim to indicate this user should be deleted
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { should_delete_user: true }
       });
 
-      if (deleteError) {
-        console.error("Error deleting user account:", deleteError);
-        toast({
-          variant: "destructive",
-          title: t('error'),
-          description: t('account.deleteFailed'),
-        });
-        setIsLoading(false);
-        return;
+      if (updateError) {
+        throw updateError;
       }
 
-      // Sign out the user after successful deletion
+      // Sign out the user
       await signOut();
+
       toast({
-        title: t('account.deleteSuccess'),
-        description: t('account.redirecting'),
+        title: t('accountDeleted'),
+        description: t('accountDeletedDescription')
       });
-    } catch (error: any) {
-      console.error("Unexpected error during account deletion:", error);
-      toast({
-        variant: "destructive",
-        title: t('error'),
-        description: error.message || t('account.deleteFailed'),
-      });
+
+      onOpenChange(false);
+    } catch (err: any) {
+      setError(err.message);
+      console.error("Error deleting account:", err);
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
     }
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t('account.delete')}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t('account.deleteWarning')}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="grid gap-2">
-          <div className="grid gap-1">
-            <Label htmlFor="password">{t('password.current')}</Label>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('confirmDeletion')}</DialogTitle>
+          <DialogDescription>
+            {t('deleteAccountWarning')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{t('error')}</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="password">{t('password')}</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-text">
+              {t('typeDeleteToConfirm')}
+            </Label>
+            <Input
+              id="confirm-text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              required
             />
           </div>
         </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>{t('cancel')}</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={isLoading}
-            onClick={handleDeleteAccount}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
           >
-            {isLoading ? t('loading') : t('account.delete')}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {t('cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : t('deleteAccount')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

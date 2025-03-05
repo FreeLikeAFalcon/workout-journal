@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type Language = 'en' | 'de';
@@ -93,6 +92,10 @@ const translations: Translations = {
     en: 'Login',
     de: 'Anmelden',
   },
+  'register': {
+    en: 'Register',
+    de: 'Registrieren',
+  },
   'signup': {
     en: 'Sign Up',
     de: 'Registrieren',
@@ -125,6 +128,22 @@ const translations: Translations = {
     en: 'Create Account',
     de: 'Konto erstellen',
   },
+  'create.account': {
+    en: 'Create Account',
+    de: 'Konto erstellen',
+  },
+  'welcome.back': {
+    en: 'Welcome Back',
+    de: 'Willkommen zurück',
+  },
+  'login.to.continue': {
+    en: 'Login to continue your fitness journey',
+    de: 'Melde dich an, um deine Fitnessreise fortzusetzen',
+  },
+  'register.to.start': {
+    en: 'Register to start your fitness journey',
+    de: 'Registriere dich, um deine Fitnessreise zu beginnen',
+  },
   'alreadyHaveAccount': {
     en: 'Already have an account?',
     de: 'Bereits ein Konto?',
@@ -140,6 +159,54 @@ const translations: Translations = {
   'backToLogin': {
     en: 'Back to Login',
     de: 'Zurück zum Login',
+  },
+  'loading': {
+    en: 'Loading...',
+    de: 'Wird geladen...',
+  },
+  'logging.in': {
+    en: 'Logging in...',
+    de: 'Anmeldung läuft...',
+  },
+  'registering': {
+    en: 'Registering...',
+    de: 'Registrierung läuft...',
+  },
+  'please.fill.all.fields': {
+    en: 'Please fill all fields',
+    de: 'Bitte fülle alle Felder aus',
+  },
+  'password.too.short': {
+    en: 'Password must be at least 6 characters',
+    de: 'Passwort muss mindestens 6 Zeichen lang sein',
+  },
+  'registration.successful': {
+    en: 'Registration successful',
+    de: 'Registrierung erfolgreich',
+  },
+  'registration.failed': {
+    en: 'Registration failed',
+    de: 'Registrierung fehlgeschlagen',
+  },
+  'please.enter.email': {
+    en: 'Please enter your email',
+    de: 'Bitte gib deine E-Mail-Adresse ein',
+  },
+  'password.reset.email.sent': {
+    en: 'Password reset email sent',
+    de: 'E-Mail zum Zurücksetzen des Passworts gesendet',
+  },
+  'password.reset.failed': {
+    en: 'Password reset failed',
+    de: 'Fehler beim Zurücksetzen des Passworts',
+  },
+  'email.placeholder': {
+    en: 'your@email.com',
+    de: 'deine@email.de',
+  },
+  'username.placeholder': {
+    en: 'Your username',
+    de: 'Dein Benutzername',
   },
   
   // Profile
