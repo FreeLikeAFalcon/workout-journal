@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Exercise, Workout, Set as WorkoutSet } from "@/types/workout";
 import { generateId } from "@/utils/workoutUtils";
@@ -19,10 +20,13 @@ const WorkoutForm: React.FC = () => {
 
   const handleAddExercise = () => {
     if (newExerciseName.trim()) {
+      // Create new exercise with an initial empty set to make it valid
       const newExercise: Exercise = {
         id: generateId(),
         name: newExerciseName.trim(),
-        sets: [],
+        sets: [
+          { id: generateId(), reps: 0, weight: 0 }
+        ],
       };
       setExercises([...exercises, newExercise]);
       setNewExerciseName("");
@@ -86,21 +90,35 @@ const WorkoutForm: React.FC = () => {
     );
   };
 
+  // Check if form is valid and the save button should be enabled
+  const isFormValid = () => {
+    // Check if there are exercises
+    if (exercises.length === 0) return false;
+    
+    // Check if at least one exercise has valid sets (reps > 0)
+    return exercises.some(exercise => 
+      exercise.sets.some(set => set.reps > 0)
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const hasValidSets = exercises.length > 0 && 
-      exercises.some(ex => ex.sets.some(set => set.reps > 0));
-    
-    if (hasValidSets) {
+    if (isFormValid()) {
       setIsSubmitting(true);
       
       try {
+        // Filter out any empty sets (reps = 0) before saving
+        const validExercises = exercises.map(exercise => ({
+          ...exercise,
+          sets: exercise.sets.filter(set => set.reps > 0)
+        })).filter(exercise => exercise.sets.length > 0);
+        
         const newWorkout: Omit<Workout, "id"> = {
           date: new Date(workoutDate).toISOString(),
           program,
           phase,
-          exercises,
+          exercises: validExercises,
         };
         
         await addWorkout(newWorkout);
@@ -243,7 +261,7 @@ const WorkoutForm: React.FC = () => {
               <Button
                 type="submit"
                 className="flex items-center gap-2 px-4 py-2"
-                disabled={!exercises.length || !exercises.some(ex => ex.sets.length > 0) || isSubmitting}
+                disabled={!isFormValid() || isSubmitting}
               >
                 <Save size={16} />
                 {isSubmitting ? "Wird gespeichert..." : "Workout speichern"}

@@ -46,10 +46,10 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
   const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
 
   const handleRemoveSet = (setId: string) => {
-    // Don't allow removing the last set if it's the only one with data
-    const isLastSetWithData = exercise.sets.length === 1;
+    // Don't allow removing the last set if it's the only one
+    const isLastSet = exercise.sets.length === 1;
     
-    if (isLastSetWithData) {
+    if (isLastSet) {
       return; // Don't delete the last set
     }
     
