@@ -7,7 +7,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Define interface types for RPC function parameters
+// Interface types for RPC function parameters
 interface GetPoliciesParams {
   table_name: string;
 }
@@ -24,81 +24,86 @@ interface CreatePolicyParams {
   with_check_expr?: string;
 }
 
-// Add RLS policies to the workouts table
+// Setup RLS policies for tables
 export const setupWorkoutsRLS = async () => {
   try {
-    // Check if the policies already exist
-    const { data: policies, error: policiesError } = await supabase
-      .rpc<any[]>('get_policies', { table_name: 'workouts' } as GetPoliciesParams);
+    // Tables that need RLS policies
+    const tables = ['workouts', 'exercises', 'sets', 'body_metrics', 'body_goals', 'widget_configs'];
     
-    if (policiesError) {
-      console.error('Error checking policies:', policiesError);
-      return;
-    }
-    
-    // If no policies are found, create them
-    if (!policies || (Array.isArray(policies) && policies.length === 0)) {
-      console.log('No RLS policies found for workouts table, creating them...');
+    for (const table of tables) {
+      // Check if the policies already exist for this table
+      const { data: policies, error: policiesError } = await supabase
+        .rpc<any[]>('get_policies', { table_name: table } as GetPoliciesParams);
       
-      // Enable RLS on the workouts table
-      const { error: enableError } = await supabase
-        .rpc('enable_rls', { table_name: 'workouts' } as EnableRLSParams);
-      
-      if (enableError) {
-        console.error('Error enabling RLS:', enableError);
-        return;
+      if (policiesError) {
+        console.error(`Error checking policies for ${table}:`, policiesError);
+        continue;
       }
       
-      // Create policies for CRUD operations
-      const { error: selectError } = await supabase
-        .rpc('create_policy', { 
-          table_name: 'workouts',
-          policy_name: 'Users can view their own workouts',
-          operation: 'SELECT',
-          using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams);
-      
-      if (selectError) {
-        console.error('Error creating SELECT policy:', selectError);
+      // If no policies are found, create them
+      if (!policies || (Array.isArray(policies) && policies.length === 0)) {
+        console.log(`No RLS policies found for ${table} table, creating them...`);
+        
+        // Enable RLS on the table
+        const { error: enableError } = await supabase
+          .rpc('enable_rls', { table_name: table } as EnableRLSParams);
+        
+        if (enableError) {
+          console.error(`Error enabling RLS for ${table}:`, enableError);
+          continue;
+        }
+        
+        // Create policies for CRUD operations
+        const { error: selectError } = await supabase
+          .rpc('create_policy', { 
+            table_name: table,
+            policy_name: `Users can view their own ${table}`,
+            operation: 'SELECT',
+            using_expr: 'auth.uid() = user_id'
+          } as CreatePolicyParams);
+        
+        if (selectError) {
+          console.error(`Error creating SELECT policy for ${table}:`, selectError);
+        }
+        
+        const { error: insertError } = await supabase
+          .rpc('create_policy', { 
+            table_name: table,
+            policy_name: `Users can create their own ${table}`,
+            operation: 'INSERT',
+            with_check_expr: 'auth.uid() = user_id'
+          } as CreatePolicyParams);
+        
+        if (insertError) {
+          console.error(`Error creating INSERT policy for ${table}:`, insertError);
+        }
+        
+        const { error: updateError } = await supabase
+          .rpc('create_policy', { 
+            table_name: table,
+            policy_name: `Users can update their own ${table}`,
+            operation: 'UPDATE',
+            using_expr: 'auth.uid() = user_id'
+          } as CreatePolicyParams);
+        
+        if (updateError) {
+          console.error(`Error creating UPDATE policy for ${table}:`, updateError);
+        }
+        
+        const { error: deleteError } = await supabase
+          .rpc('create_policy', { 
+            table_name: table,
+            policy_name: `Users can delete their own ${table}`,
+            operation: 'DELETE',
+            using_expr: 'auth.uid() = user_id'
+          } as CreatePolicyParams);
+        
+        if (deleteError) {
+          console.error(`Error creating DELETE policy for ${table}:`, deleteError);
+        }
+        
+        console.log(`RLS policies created successfully for ${table} table`);
       }
-      
-      const { error: insertError } = await supabase
-        .rpc('create_policy', { 
-          table_name: 'workouts',
-          policy_name: 'Users can create their own workouts',
-          operation: 'INSERT',
-          with_check_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams);
-      
-      if (insertError) {
-        console.error('Error creating INSERT policy:', insertError);
-      }
-      
-      const { error: updateError } = await supabase
-        .rpc('create_policy', { 
-          table_name: 'workouts',
-          policy_name: 'Users can update their own workouts',
-          operation: 'UPDATE',
-          using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams);
-      
-      if (updateError) {
-        console.error('Error creating UPDATE policy:', updateError);
-      }
-      
-      const { error: deleteError } = await supabase
-        .rpc('create_policy', { 
-          table_name: 'workouts',
-          policy_name: 'Users can delete their own workouts',
-          operation: 'DELETE',
-          using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams);
-      
-      if (deleteError) {
-        console.error('Error creating DELETE policy:', deleteError);
-      }
-      
-      console.log('RLS policies created successfully for workouts table');
     }
   } catch (error) {
     console.error('Error setting up RLS policies:', error);
