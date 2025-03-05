@@ -22,24 +22,24 @@ export const setupRLS = async () => {
     };
     
     // Correctly specify both return type and parameters type
-    const { data: policies } = await supabase.rpc<any[], GetPoliciesParams>('get_policies', {});
+    const { data: policies } = await supabase.rpc<Record<string, any>, GetPoliciesParams>('get_policies', {});
     
     console.log("Current policies:", policies);
     
-    if (!policies || policies.length === 0) {
+    if (!policies || (Array.isArray(policies) && policies.length === 0)) {
       console.log("No RLS policies found, creating them...");
       
       // Enable RLS on all tables with correct type parameters
-      await supabase.rpc<any, EnableRLSParams>('enable_rls', {
+      await supabase.rpc<null, EnableRLSParams>('enable_rls', {
         p_table_name: 'profiles'
       });
       
-      await supabase.rpc<any, EnableRLSParams>('enable_rls', {
+      await supabase.rpc<null, EnableRLSParams>('enable_rls', {
         p_table_name: 'workouts'
       });
       
       // Create profile policies with correct type parameters
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'profiles',
         p_policy_name: 'Users can view their own profile',
         p_policy_definition: 'auth.uid() = id',
@@ -47,7 +47,7 @@ export const setupRLS = async () => {
         p_check_expression: 'true'
       });
       
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'profiles',
         p_policy_name: 'Users can update their own profile',
         p_policy_definition: 'auth.uid() = id',
@@ -56,7 +56,7 @@ export const setupRLS = async () => {
       });
       
       // Create workout policies with correct type parameters
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can view their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
@@ -64,7 +64,7 @@ export const setupRLS = async () => {
         p_check_expression: 'true'
       });
       
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can insert their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
@@ -72,7 +72,7 @@ export const setupRLS = async () => {
         p_check_expression: 'true'
       });
       
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can update their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
@@ -80,7 +80,7 @@ export const setupRLS = async () => {
         p_check_expression: 'true'
       });
       
-      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
+      await supabase.rpc<null, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can delete their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
