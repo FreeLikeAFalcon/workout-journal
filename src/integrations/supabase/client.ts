@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -9,75 +10,83 @@ export const setupRLS = async () => {
   try {
     console.log("Setting up RLS...");
     
-    // Use a different approach for type parameters
-    const { data: policies } = await supabase.rpc<Record<string, any>[]>('get_policies', {});
+    // Define types for RPC parameters
+    type GetPoliciesParams = Record<string, never>;
+    type EnableRLSParams = { p_table_name: string };
+    type CreatePolicyParams = {
+      p_table_name: string;
+      p_policy_name: string;
+      p_policy_definition: string;
+      p_operation: string;
+      p_check_expression: string;
+    };
+    
+    // Correctly specify both return type and parameters type
+    const { data: policies } = await supabase.rpc<any[], GetPoliciesParams>('get_policies', {});
     
     console.log("Current policies:", policies);
     
     if (!policies || policies.length === 0) {
       console.log("No RLS policies found, creating them...");
       
-      // Create types for the RPC function parameters
-      type RPCParams = Record<string, any>;
-      
-      // Enable RLS on all tables
-      await supabase.rpc<Record<string, any>>('enable_rls', {
+      // Enable RLS on all tables with correct type parameters
+      await supabase.rpc<any, EnableRLSParams>('enable_rls', {
         p_table_name: 'profiles'
-      } as RPCParams);
+      });
       
-      await supabase.rpc<Record<string, any>>('enable_rls', {
+      await supabase.rpc<any, EnableRLSParams>('enable_rls', {
         p_table_name: 'workouts'
-      } as RPCParams);
+      });
       
-      // Create profile policies
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      // Create profile policies with correct type parameters
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'profiles',
         p_policy_name: 'Users can view their own profile',
         p_policy_definition: 'auth.uid() = id',
         p_operation: 'SELECT',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'profiles',
         p_policy_name: 'Users can update their own profile',
         p_policy_definition: 'auth.uid() = id',
         p_operation: 'UPDATE',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
-      // Create workout policies
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      // Create workout policies with correct type parameters
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can view their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
         p_operation: 'SELECT',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can insert their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
         p_operation: 'INSERT',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can update their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
         p_operation: 'UPDATE',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
-      await supabase.rpc<Record<string, any>>('create_policy', {
+      await supabase.rpc<any, CreatePolicyParams>('create_policy', {
         p_table_name: 'workouts',
         p_policy_name: 'Users can delete their own workouts',
         p_policy_definition: 'auth.uid() = user_id',
         p_operation: 'DELETE',
         p_check_expression: 'true'
-      } as RPCParams);
+      });
       
       console.log("RLS policies created successfully");
     } else {
