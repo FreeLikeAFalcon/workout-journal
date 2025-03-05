@@ -29,7 +29,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className }) => {
           <span className="text-sm uppercase">{language}</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-popover border-border">
         <DropdownMenuItem 
           className="flex items-center justify-between cursor-pointer"
           onClick={() => handleLanguageChange('de')}

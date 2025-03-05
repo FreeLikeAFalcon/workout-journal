@@ -82,6 +82,12 @@
   }
 }
 
+/* Add styles for dropdown menus in dark mode */
+.dark [data-radix-popper-content-wrapper] {
+  --tw-bg-opacity: 1;
+  --tw-border-opacity: 0.2;
+}
+
 @font-face {
   font-family: 'Inter var';
   font-weight: 100 900;

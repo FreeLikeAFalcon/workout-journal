@@ -1,111 +1,112 @@
-
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
 
-const SUPABASE_URL = "https://tihibpfypycjsraijtcd.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpaGlicGZ5cHljanNyYWlqdGNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxOTYsImV4cCI6MjA1NjU3MjE5Nn0.cWdp3lWbaBVNKDfwFbrGhx4q1X0Vl4zyVu__CzO2gQM";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Define types for our RPC functions
-type GetPoliciesParams = {
-  table_name: string;
-};
-
-type EnableRLSParams = {
-  table_name: string;
-};
-
-type CreatePolicyParams = {
-  table_name: string;
-  policy_name: string;
-  operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
-  using_expr?: string;
-  with_check_expr?: string;
-};
-
-// Setup RLS policies for tables
-export const setupWorkoutsRLS = async () => {
+export const setupRLS = async () => {
   try {
-    // Tables that need RLS policies
-    const tables = ['workouts', 'exercises', 'sets', 'body_metrics', 'body_goals', 'widget_configs'];
+    console.log("Setting up RLS...");
     
-    for (const table of tables) {
-      // Check if the policies already exist for this table
-      const { data: policies, error: policiesError } = await supabase
-        .rpc<any[], any>('get_policies', { table_name: table } as GetPoliciesParams);
+    // Use a different approach for type parameters
+    const { data: policies } = await supabase.rpc<Record<string, any>[]>('get_policies', {});
+    
+    console.log("Current policies:", policies);
+    
+    if (!policies || policies.length === 0) {
+      console.log("No RLS policies found, creating them...");
       
-      if (policiesError) {
-        console.error(`Error checking policies for ${table}:`, policiesError);
-        continue;
-      }
+      // Create types for the RPC function parameters
+      type RPCParams = Record<string, any>;
       
-      // If no policies are found, create them
-      if (!policies || policies.length === 0) {
-        console.log(`No RLS policies found for ${table} table, creating them...`);
-        
-        // Enable RLS on the table
-        const { error: enableError } = await supabase
-          .rpc<any, any>('enable_rls', { table_name: table } as EnableRLSParams);
-        
-        if (enableError) {
-          console.error(`Error enabling RLS for ${table}:`, enableError);
-          continue;
-        }
-        
-        // Create policies for CRUD operations
-        const { error: selectError } = await supabase
-          .rpc<any, any>('create_policy', { 
-            table_name: table,
-            policy_name: `Users can view their own ${table}`,
-            operation: 'SELECT',
-            using_expr: 'auth.uid() = user_id'
-          } as CreatePolicyParams);
-        
-        if (selectError) {
-          console.error(`Error creating SELECT policy for ${table}:`, selectError);
-        }
-        
-        const { error: insertError } = await supabase
-          .rpc<any, any>('create_policy', { 
-            table_name: table,
-            policy_name: `Users can create their own ${table}`,
-            operation: 'INSERT',
-            with_check_expr: 'auth.uid() = user_id'
-          } as CreatePolicyParams);
-        
-        if (insertError) {
-          console.error(`Error creating INSERT policy for ${table}:`, insertError);
-        }
-        
-        const { error: updateError } = await supabase
-          .rpc<any, any>('create_policy', { 
-            table_name: table,
-            policy_name: `Users can update their own ${table}`,
-            operation: 'UPDATE',
-            using_expr: 'auth.uid() = user_id'
-          } as CreatePolicyParams);
-        
-        if (updateError) {
-          console.error(`Error creating UPDATE policy for ${table}:`, updateError);
-        }
-        
-        const { error: deleteError } = await supabase
-          .rpc<any, any>('create_policy', { 
-            table_name: table,
-            policy_name: `Users can delete their own ${table}`,
-            operation: 'DELETE',
-            using_expr: 'auth.uid() = user_id'
-          } as CreatePolicyParams);
-        
-        if (deleteError) {
-          console.error(`Error creating DELETE policy for ${table}:`, deleteError);
-        }
-        
-        console.log(`RLS policies created successfully for ${table} table`);
-      }
+      // Enable RLS on all tables
+      await supabase.rpc<Record<string, any>>('enable_rls', {
+        p_table_name: 'profiles'
+      } as RPCParams);
+      
+      await supabase.rpc<Record<string, any>>('enable_rls', {
+        p_table_name: 'workouts'
+      } as RPCParams);
+      
+      // Create profile policies
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'profiles',
+        p_policy_name: 'Users can view their own profile',
+        p_policy_definition: 'auth.uid() = id',
+        p_operation: 'SELECT',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'profiles',
+        p_policy_name: 'Users can update their own profile',
+        p_policy_definition: 'auth.uid() = id',
+        p_operation: 'UPDATE',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      // Create workout policies
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'workouts',
+        p_policy_name: 'Users can view their own workouts',
+        p_policy_definition: 'auth.uid() = user_id',
+        p_operation: 'SELECT',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'workouts',
+        p_policy_name: 'Users can insert their own workouts',
+        p_policy_definition: 'auth.uid() = user_id',
+        p_operation: 'INSERT',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'workouts',
+        p_policy_name: 'Users can update their own workouts',
+        p_policy_definition: 'auth.uid() = user_id',
+        p_operation: 'UPDATE',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      await supabase.rpc<Record<string, any>>('create_policy', {
+        p_table_name: 'workouts',
+        p_policy_name: 'Users can delete their own workouts',
+        p_policy_definition: 'auth.uid() = user_id',
+        p_operation: 'DELETE',
+        p_check_expression: 'true'
+      } as RPCParams);
+      
+      console.log("RLS policies created successfully");
+    } else {
+      console.log("RLS policies already exist");
     }
+    
+    return { success: true };
   } catch (error) {
-    console.error('Error setting up RLS policies:', error);
+    console.error("Error setting up RLS:", error);
+    return { success: false, error };
+  }
+};
+
+export const getProfile = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Unexpected error fetching profile:", error);
+    return null;
   }
 };
