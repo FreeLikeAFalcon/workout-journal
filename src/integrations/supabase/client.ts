@@ -7,22 +7,22 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Define interface types for RPC function parameters
-interface GetPoliciesParams {
+// Define types for our RPC functions
+type GetPoliciesParams = {
   table_name: string;
-}
+};
 
-interface EnableRLSParams {
+type EnableRLSParams = {
   table_name: string;
-}
+};
 
-interface CreatePolicyParams {
+type CreatePolicyParams = {
   table_name: string;
   policy_name: string;
   operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
   using_expr?: string;
   with_check_expr?: string;
-}
+};
 
 // Setup RLS policies for tables
 export const setupWorkoutsRLS = async () => {
@@ -33,7 +33,7 @@ export const setupWorkoutsRLS = async () => {
     for (const table of tables) {
       // Check if the policies already exist for this table
       const { data: policies, error: policiesError } = await supabase
-        .rpc<any[]>('get_policies', { table_name: table } as GetPoliciesParams);
+        .rpc('get_policies', { table_name: table } as GetPoliciesParams);
       
       if (policiesError) {
         console.error(`Error checking policies for ${table}:`, policiesError);
@@ -41,7 +41,7 @@ export const setupWorkoutsRLS = async () => {
       }
       
       // If no policies are found, create them
-      if (!policies || (Array.isArray(policies) && policies.length === 0)) {
+      if (!policies || policies.length === 0) {
         console.log(`No RLS policies found for ${table} table, creating them...`);
         
         // Enable RLS on the table
