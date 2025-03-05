@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type Language = 'en' | 'de';
@@ -419,6 +420,52 @@ const translations: Translations = {
   'errorAddingWorkout': {
     en: 'Error adding workout',
     de: 'Fehler beim Hinzufügen des Trainings',
+  },
+  
+  // Dashboard and Widget Keys
+  'workouts.total': {
+    en: 'Total Workouts',
+    de: 'Workouts gesamt',
+  },
+  'exercises.total': {
+    en: 'Total Exercises',
+    de: 'Übungen gesamt',
+  },
+  'sets.total': {
+    en: 'Total Sets', 
+    de: 'Sätze gesamt',
+  },
+  'exercise.mostFrequent': {
+    en: 'Most Frequent Exercise',
+    de: 'Häufigste Übung',
+  },
+  'metrics.currentWeight': {
+    en: 'Current Weight',
+    de: 'Aktuelles Gewicht',
+  },
+  'metrics.weightGoal': {
+    en: 'Weight Goal',
+    de: 'Gewichtsziel',
+  },
+  'metrics.bodyFat': {
+    en: 'Body Fat',
+    de: 'Körperfett',
+  },
+  'metrics.muscleMass': {
+    en: 'Muscle Mass',
+    de: 'Muskelmasse',
+  },
+  'widgets.customize': {
+    en: 'Customize Widgets',
+    de: 'Widgets anpassen',
+  },
+  'widgets.none': {
+    en: 'No widgets to display',
+    de: 'Keine Widgets zum Anzeigen',
+  },
+  'workoutHistory': {
+    en: 'Workout History',
+    de: 'Trainingshistorie',
   },
 };
 
