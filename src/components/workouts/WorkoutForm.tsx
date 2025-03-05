@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Exercise, Workout, Set as WorkoutSet } from "@/types/workout";
 import { generateId } from "@/utils/workoutUtils";
@@ -55,6 +54,9 @@ const WorkoutForm: React.FC = () => {
     setExercises(
       exercises.map((exercise) => {
         if (exercise.id === exerciseId) {
+          if (exercise.sets.length <= 1) {
+            return exercise;
+          }
           return {
             ...exercise,
             sets: exercise.sets.filter((set) => set.id !== setId),
@@ -87,8 +89,10 @@ const WorkoutForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Nur speichern, wenn es Übungen mit Sets gibt
-    if (exercises.length > 0 && exercises.some(ex => ex.sets.length > 0)) {
+    const hasValidSets = exercises.length > 0 && 
+      exercises.some(ex => ex.sets.some(set => set.reps > 0));
+    
+    if (hasValidSets) {
       setIsSubmitting(true);
       
       try {
@@ -101,7 +105,6 @@ const WorkoutForm: React.FC = () => {
         
         await addWorkout(newWorkout);
         
-        // Formular zurücksetzen
         setWorkoutDate(new Date().toISOString().split("T")[0]);
         setProgram("MAPS Anabolic");
         setPhase("Phase 1");
@@ -122,6 +125,12 @@ const WorkoutForm: React.FC = () => {
       } finally {
         setIsSubmitting(false);
       }
+    } else {
+      toast({
+        title: "Ungültiges Workout",
+        description: "Bitte füge mindestens eine Übung mit einem Satz hinzu.",
+        variant: "destructive",
+      });
     }
   };
 

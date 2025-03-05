@@ -29,10 +29,9 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
     [...exercise.sets].sort((a, b) => b.weight - a.weight)[0] : null;
 
   const handleAddSet = () => {
-    if (newSet.reps > 0) {
-      if (onAddSet) {
-        onAddSet(exercise.id, newSet);
-      }
+    // Only add the set if reps are greater than 0
+    if (newSet.reps > 0 && onAddSet) {
+      onAddSet(exercise.id, newSet);
       setNewSet({ reps: 0, weight: 0 });
     }
   };
@@ -43,13 +42,15 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
     }
   };
 
-  // Fixed calculation of total volume
+  // Calculate total volume correctly
   const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
 
   const handleRemoveSet = (setId: string) => {
     // Don't allow removing the last set if it's the only one with data
-    if (exercise.sets.length === 1) {
-      return;
+    const isLastSetWithData = exercise.sets.length === 1;
+    
+    if (isLastSetWithData) {
+      return; // Don't delete the last set
     }
     
     if (onRemoveSet) {
