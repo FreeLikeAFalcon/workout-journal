@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
@@ -65,7 +64,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       console.log("Fetched workouts:", workoutsData);
       
-      if (!workoutsData || workoutsData.length === 0) {
+      const fetchedWorkouts = workoutsData || [];
+      
+      if (fetchedWorkouts.length === 0) {
         console.log("No workouts found, creating sample workouts");
         if (user) {
           const sampleWorkouts = createSampleWorkouts().map(workout => ({
@@ -73,18 +74,76 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             user_id: user.id
           }));
           await saveWorkoutsToDatabase(sampleWorkouts);
+          return; // saveWorkoutsToDatabase will call fetchWorkouts again
         }
-        return;
       }
 
-      const fullWorkouts = await Promise.all(workoutsData.map(async (workout) => {
-        const { data: exercisesData, error: exercisesError } = await supabase
-          .from('exercises')
-          .select('*')
-          .eq('workout_id', workout.id);
+      const fullWorkouts = await Promise.all(fetchedWorkouts.map(async (workout) => {
+        try {
+          const { data: exercisesData, error: exercisesError } = await supabase
+            .from('exercises')
+            .select('*')
+            .eq('workout_id', workout.id);
 
-        if (exercisesError) {
-          console.error("Error fetching exercises:", exercisesError);
+          if (exercisesError) {
+            console.error("Error fetching exercises:", exercisesError);
+            return {
+              id: workout.id,
+              date: workout.date,
+              program: workout.program,
+              phase: workout.phase,
+              exercises: []
+            };
+          }
+
+          const exercises = exercisesData || [];
+          
+          const exercisesWithSets = await Promise.all(exercises.map(async (exercise) => {
+            try {
+              const { data: setsData, error: setsError } = await supabase
+                .from('sets')
+                .select('*')
+                .eq('exercise_id', exercise.id);
+
+              if (setsError) {
+                console.error("Error fetching sets:", setsError);
+                return {
+                  id: exercise.id,
+                  name: exercise.name,
+                  sets: []
+                };
+              }
+
+              const sets = setsData || [];
+              
+              return {
+                id: exercise.id,
+                name: exercise.name,
+                sets: sets.map(set => ({
+                  id: set.id,
+                  reps: set.reps,
+                  weight: parseFloat(set.weight as unknown as string)
+                }))
+              };
+            } catch (exerciseError) {
+              console.error("Error processing exercise:", exerciseError);
+              return {
+                id: exercise.id,
+                name: exercise.name,
+                sets: []
+              };
+            }
+          }));
+
+          return {
+            id: workout.id,
+            date: workout.date,
+            program: workout.program,
+            phase: workout.phase,
+            exercises: exercisesWithSets
+          };
+        } catch (workoutError) {
+          console.error("Error processing workout:", workoutError);
           return {
             id: workout.id,
             date: workout.date,
@@ -93,46 +152,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             exercises: []
           };
         }
-
-        const exercisesWithSets = await Promise.all(exercisesData.map(async (exercise) => {
-          const { data: setsData, error: setsError } = await supabase
-            .from('sets')
-            .select('*')
-            .eq('exercise_id', exercise.id);
-
-          if (setsError) {
-            console.error("Error fetching sets:", setsError);
-            return {
-              id: exercise.id,
-              name: exercise.name,
-              sets: []
-            };
-          }
-
-          return {
-            id: exercise.id,
-            name: exercise.name,
-            sets: setsData.map(set => ({
-              id: set.id,
-              reps: set.reps,
-              weight: parseFloat(set.weight as unknown as string)
-            }))
-          };
-        }));
-
-        return {
-          id: workout.id,
-          date: workout.date,
-          program: workout.program,
-          phase: workout.phase,
-          exercises: exercisesWithSets
-        };
       }));
 
       console.log("Setting full workouts:", fullWorkouts);
       setWorkouts(fullWorkouts);
     } catch (error) {
       console.error("Error in fetchWorkouts:", error);
+      setWorkouts([]);
     }
   };
 
@@ -181,7 +207,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 .insert(sets.map((s: any) => ({
                   exercise_id: exerciseId,
                   reps: s.reps,
-                  weight: s.weight, // Supabase handles number to string conversion
+                  weight: s.weight
                 })));
 
               if (setsError) {
@@ -199,89 +225,113 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addWorkout = async (workout: Omit<Workout, "id">) => {
-    const newWorkoutId = generateId();
-    const newWorkout = {
-      ...workout,
-      id: newWorkoutId,
-    };
-    setWorkouts((prev) => [...prev, newWorkout]);
+    try {
+      const newWorkoutId = generateId();
+      const newWorkout = {
+        ...workout,
+        id: newWorkoutId,
+      };
+      
+      setWorkouts((prev) => [...prev, newWorkout]);
 
-    if (user) {
-      try {
-        const { data: insertedWorkout, error: workoutError } = await supabase
-          .from('workouts')
-          .insert({
-            user_id: user.id,
-            date: workout.date,
-            program: workout.program,
-            phase: workout.phase
-          })
-          .select()
-          .single();
-
-        if (workoutError) {
-          console.error("Error adding workout:", workoutError);
-          fetchWorkouts();
-          toast({
-            title: "Workout not added",
-            description: "There was an error saving your workout.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const workoutId = insertedWorkout.id;
-
-        for (const exercise of workout.exercises) {
-          const { data: insertedExercise, error: exerciseError } = await supabase
-            .from('exercises')
+      if (user) {
+        try {
+          const { data: insertedWorkout, error: workoutError } = await supabase
+            .from('workouts')
             .insert({
-              workout_id: workoutId,
-              name: exercise.name
+              user_id: user.id,
+              date: workout.date,
+              program: workout.program,
+              phase: workout.phase
             })
             .select()
             .single();
 
-          if (exerciseError) {
-            console.error("Error adding exercise:", exerciseError);
-            continue;
+          if (workoutError) {
+            console.error("Error adding workout:", workoutError);
+            fetchWorkouts();
+            toast({
+              title: "Workout not added",
+              description: "There was an error saving your workout.",
+              variant: "destructive",
+            });
+            return;
           }
 
-          if (exercise.sets.length > 0) {
-            const { error: setsError } = await supabase
-              .from('sets')
-              .insert(exercise.sets.map(set => ({
-                exercise_id: insertedExercise.id,
-                reps: set.reps,
-                weight: set.weight
-              })));
+          const workoutId = insertedWorkout.id;
 
-            if (setsError) {
-              console.error("Error adding sets:", setsError);
+          for (const exercise of workout.exercises) {
+            try {
+              const { data: insertedExercise, error: exerciseError } = await supabase
+                .from('exercises')
+                .insert({
+                  workout_id: workoutId,
+                  name: exercise.name
+                })
+                .select()
+                .single();
+
+              if (exerciseError) {
+                console.error("Error adding exercise:", exerciseError);
+                continue;
+              }
+
+              if (exercise.sets.length > 0) {
+                const { error: setsError } = await supabase
+                  .from('sets')
+                  .insert(exercise.sets.map(set => ({
+                    exercise_id: insertedExercise.id,
+                    reps: set.reps,
+                    weight: set.weight
+                  })));
+
+                if (setsError) {
+                  console.error("Error adding sets:", setsError);
+                }
+              }
+            } catch (exerciseError) {
+              console.error("Error processing exercise:", exerciseError);
             }
           }
+
+          fetchWorkouts();
+          
+          toast({
+            title: "Workout added",
+            description: `Your workout for ${new Date(workout.date).toLocaleDateString()} has been saved.`,
+          });
+        } catch (saveError) {
+          console.error("Error in addWorkout:", saveError);
+          fetchWorkouts();
+          toast({
+            title: "Error",
+            description: "An unexpected error occurred while saving the workout.",
+            variant: "destructive",
+          });
         }
-
-        fetchWorkouts();
-      } catch (error) {
-        console.error("Error in addWorkout:", error);
+      } else {
+        localStorage.setItem("workouts", JSON.stringify([...workouts, newWorkout]));
+        toast({
+          title: "Workout added",
+          description: `Your workout for ${new Date(workout.date).toLocaleDateString()} has been saved.`,
+        });
       }
+    } catch (error) {
+      console.error("Unexpected error in addWorkout:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
-
-    toast({
-      title: "Workout added",
-      description: `Your workout for ${new Date(workout.date).toLocaleDateString()} has been saved.`,
-    });
   };
 
   const deleteWorkout = async (id: string) => {
     console.log("Deleting workout with ID:", id);
-    // Update UI immediately
     setWorkouts((prev) => prev.filter((workout) => workout.id !== id));
 
     if (user) {
       try {
-        // First, fetch exercises for this workout to get their IDs
         const { data: exercisesData, error: exercisesError } = await supabase
           .from('exercises')
           .select('id')
@@ -294,14 +344,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             description: "Failed to delete workout: couldn't fetch exercises.",
             variant: "destructive",
           });
-          fetchWorkouts(); // Reload data to restore UI
+          fetchWorkouts();
           return;
         }
 
         if (exercisesData && exercisesData.length > 0) {
           const exerciseIds = exercisesData.map(e => e.id);
           
-          // Delete all sets for these exercises
           const { error: setsError } = await supabase
             .from('sets')
             .delete()
@@ -314,11 +363,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
               description: "Failed to delete workout: couldn't delete sets.",
               variant: "destructive",
             });
-            fetchWorkouts(); // Reload data to restore UI
+            fetchWorkouts();
             return;
           }
           
-          // Delete the exercises
           const { error: exError } = await supabase
             .from('exercises')
             .delete()
@@ -331,12 +379,11 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
               description: "Failed to delete workout: couldn't delete exercises.",
               variant: "destructive",
             });
-            fetchWorkouts(); // Reload data to restore UI
+            fetchWorkouts();
             return;
           }
         }
 
-        // Finally, delete the workout
         const { error } = await supabase
           .from('workouts')
           .delete()
@@ -349,7 +396,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             description: "Failed to delete workout.",
             variant: "destructive",
           });
-          fetchWorkouts(); // Reload data to restore UI
+          fetchWorkouts();
           return;
         }
         
@@ -365,10 +412,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           description: "An unexpected error occurred while deleting workout.",
           variant: "destructive",
         });
-        fetchWorkouts(); // Reload data to restore UI
+        fetchWorkouts();
       }
     } else {
-      // For non-authenticated users, update localStorage
       const updatedWorkouts = workouts.filter(w => w.id !== id);
       localStorage.setItem("workouts", JSON.stringify(updatedWorkouts));
       toast({
@@ -416,7 +462,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (user) {
       try {
-        // Get all workouts for this user
         const { data: workoutsData, error: workoutsError } = await supabase
           .from('workouts')
           .select('id')
@@ -425,7 +470,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (workoutsError) {
           console.error("Error fetching workouts for deletion:", workoutsError);
         } else if (workoutsData && workoutsData.length > 0) {
-          // Get all exercises for these workouts
           const workoutIds = workoutsData.map(w => w.id);
           const { data: exercisesData, error: exercisesError } = await supabase
             .from('exercises')
@@ -435,7 +479,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (exercisesError) {
             console.error("Error fetching exercises for deletion:", exercisesError);
           } else if (exercisesData && exercisesData.length > 0) {
-            // Delete all sets for these exercises
             const exerciseIds = exercisesData.map(e => e.id);
             const { error: setsError } = await supabase
               .from('sets')
@@ -446,7 +489,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
               console.error("Error deleting sets:", setsError);
             }
             
-            // Delete the exercises
             const { error: exError } = await supabase
               .from('exercises')
               .delete()
@@ -457,7 +499,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
           }
           
-          // Delete all workouts
           const { error: workoutsDeleteError } = await supabase
             .from('workouts')
             .delete()
@@ -487,7 +528,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
     } else {
-      // For non-authenticated users, just clear localStorage
       localStorage.removeItem("workouts");
     }
 

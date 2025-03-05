@@ -28,9 +28,9 @@ interface CreatePolicyParams {
 export const setupWorkoutsRLS = async () => {
   try {
     // Check if the policies already exist
-    // @ts-ignore - Working around type issues with RPC functions
+    // Using any for the return type since we're uncertain of the exact structure
     const { data: policies, error: policiesError } = await supabase
-      .rpc('get_policies', { table_name: 'workouts' });
+      .rpc('get_policies', { table_name: 'workouts' } as GetPoliciesParams) as { data: any[], error: any };
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -42,41 +42,62 @@ export const setupWorkoutsRLS = async () => {
       console.log('No RLS policies found for workouts table, creating them...');
       
       // Enable RLS on the workouts table
-      // @ts-ignore - Working around type issues with RPC functions
-      await supabase.rpc('enable_rls', { table_name: 'workouts' });
+      const { error: enableError } = await supabase
+        .rpc('enable_rls', { table_name: 'workouts' } as EnableRLSParams) as { data: any, error: any };
+      
+      if (enableError) {
+        console.error('Error enabling RLS:', enableError);
+        return;
+      }
       
       // Create policies for CRUD operations
-      // @ts-ignore - Working around type issues with RPC functions
-      await supabase.rpc('create_policy', { 
-        table_name: 'workouts',
-        policy_name: 'Users can view their own workouts',
-        operation: 'SELECT',
-        using_expr: 'auth.uid() = user_id'
-      });
+      const { error: selectError } = await supabase
+        .rpc('create_policy', { 
+          table_name: 'workouts',
+          policy_name: 'Users can view their own workouts',
+          operation: 'SELECT',
+          using_expr: 'auth.uid() = user_id'
+        } as CreatePolicyParams) as { data: any, error: any };
       
-      // @ts-ignore - Working around type issues with RPC functions
-      await supabase.rpc('create_policy', { 
-        table_name: 'workouts',
-        policy_name: 'Users can create their own workouts',
-        operation: 'INSERT',
-        with_check_expr: 'auth.uid() = user_id'
-      });
+      if (selectError) {
+        console.error('Error creating SELECT policy:', selectError);
+      }
       
-      // @ts-ignore - Working around type issues with RPC functions
-      await supabase.rpc('create_policy', { 
-        table_name: 'workouts',
-        policy_name: 'Users can update their own workouts',
-        operation: 'UPDATE',
-        using_expr: 'auth.uid() = user_id'
-      });
+      const { error: insertError } = await supabase
+        .rpc('create_policy', { 
+          table_name: 'workouts',
+          policy_name: 'Users can create their own workouts',
+          operation: 'INSERT',
+          with_check_expr: 'auth.uid() = user_id'
+        } as CreatePolicyParams) as { data: any, error: any };
       
-      // @ts-ignore - Working around type issues with RPC functions
-      await supabase.rpc('create_policy', { 
-        table_name: 'workouts',
-        policy_name: 'Users can delete their own workouts',
-        operation: 'DELETE',
-        using_expr: 'auth.uid() = user_id'
-      });
+      if (insertError) {
+        console.error('Error creating INSERT policy:', insertError);
+      }
+      
+      const { error: updateError } = await supabase
+        .rpc('create_policy', { 
+          table_name: 'workouts',
+          policy_name: 'Users can update their own workouts',
+          operation: 'UPDATE',
+          using_expr: 'auth.uid() = user_id'
+        } as CreatePolicyParams) as { data: any, error: any };
+      
+      if (updateError) {
+        console.error('Error creating UPDATE policy:', updateError);
+      }
+      
+      const { error: deleteError } = await supabase
+        .rpc('create_policy', { 
+          table_name: 'workouts',
+          policy_name: 'Users can delete their own workouts',
+          operation: 'DELETE',
+          using_expr: 'auth.uid() = user_id'
+        } as CreatePolicyParams) as { data: any, error: any };
+      
+      if (deleteError) {
+        console.error('Error creating DELETE policy:', deleteError);
+      }
       
       console.log('RLS policies created successfully for workouts table');
     }
