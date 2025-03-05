@@ -12,7 +12,7 @@ export const setupWorkoutsRLS = async () => {
   try {
     // Check if the policies already exist
     const { data: policies, error: policiesError } = await supabase
-      .rpc('get_policies', { table_name: 'workouts' });
+      .rpc('get_policies', { table_name: 'workouts' } as any);
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -20,11 +20,11 @@ export const setupWorkoutsRLS = async () => {
     }
     
     // If no policies are found, create them
-    if (!policies || policies.length === 0) {
+    if (!policies || (policies as any[]).length === 0) {
       console.log('No RLS policies found for workouts table, creating them...');
       
       // Enable RLS on the workouts table
-      await supabase.rpc('enable_rls', { table_name: 'workouts' });
+      await supabase.rpc('enable_rls', { table_name: 'workouts' } as any);
       
       // Create policies for CRUD operations
       await supabase.rpc('create_policy', { 
@@ -32,28 +32,28 @@ export const setupWorkoutsRLS = async () => {
         policy_name: 'Users can view their own workouts',
         operation: 'SELECT',
         using_expr: 'auth.uid() = user_id'
-      });
+      } as any);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can create their own workouts',
         operation: 'INSERT',
         with_check_expr: 'auth.uid() = user_id'
-      });
+      } as any);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can update their own workouts',
         operation: 'UPDATE',
         using_expr: 'auth.uid() = user_id'
-      });
+      } as any);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can delete their own workouts',
         operation: 'DELETE',
         using_expr: 'auth.uid() = user_id'
-      });
+      } as any);
       
       console.log('RLS policies created successfully for workouts table');
     }
