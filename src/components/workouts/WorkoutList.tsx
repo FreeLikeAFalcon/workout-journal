@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo } from "react";
 import { Workout } from "@/types/workout";
-import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord, lbsToKg } from "@/utils/workoutUtils";
+import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord } from "@/utils/workoutUtils";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Calendar, ChevronDown, ChevronUp, Dumbbell, Trash, Filter, FolderOpen, FolderClosed } from "lucide-react";
 import ExerciseItem from "./ExerciseItem";
@@ -238,7 +239,7 @@ const WorkoutList: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {lbsToKg(calculateWorkoutVolume(workout)).toFixed(1)} kg Gesamtvolumen
+                      {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {calculateWorkoutVolume(workout).toFixed(1)} kg Gesamtvolumen
                     </div>
                   </div>
                   
@@ -321,7 +322,7 @@ const WorkoutList: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {lbsToKg(calculateWorkoutVolume(workout)).toFixed(1)} kg Gesamtvolumen
+                          {workout.exercises.length} Übungen • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} Sätze • {calculateWorkoutVolume(workout).toFixed(1)} kg Gesamtvolumen
                         </div>
                       </div>
                       

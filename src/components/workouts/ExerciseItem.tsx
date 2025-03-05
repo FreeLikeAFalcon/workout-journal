@@ -43,7 +43,7 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
     }
   };
 
-  // Berechnung des Gesamtvolumens
+  // Fixed calculation of total volume
   const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
 
   return (
