@@ -99,7 +99,7 @@ const WidgetCustomizer: React.FC<WidgetCustomizerProps> = ({ onClose }) => {
         </div>
         
         <p className="text-muted-foreground mb-4">
-          Ziehe die Widgets, um ihre Reihenfolge zu ändern. Klicke auf ein Widget, um es ein- oder auszublenden.
+          Ziehe die widgets, um ihre reihenfolge zu ändern. Klicke auf ein widget, um es ein- oder auszublenden.
         </p>
         
         <ScrollArea className="mb-6 h-[200px] pr-4">

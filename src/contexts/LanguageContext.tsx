@@ -25,7 +25,7 @@ const translations: Translations = {
   },
   'welcome.subtitle': {
     en: 'Your personal fitness journey starts here',
-    de: 'Deine persönliche Fitnessreise beginnt hier',
+    de: 'Deine persönliche fitnessreise beginnt hier',
   },
   
   // General
@@ -71,7 +71,7 @@ const translations: Translations = {
   },
   'journey': {
     en: 'Track your fitness journey',
-    de: 'Verfolge deine Fitnessreise',
+    de: 'Verfolge deine fitnessreise',
   },
   
   // User Menu
@@ -139,11 +139,11 @@ const translations: Translations = {
   },
   'login.to.continue': {
     en: 'Login to continue your fitness journey',
-    de: 'Melde dich an, um deine Fitnessreise fortzusetzen',
+    de: 'Melde dich an, um deine fitnessreise fortzusetzen',
   },
   'register.to.start': {
     en: 'Register to start your fitness journey',
-    de: 'Registriere dich, um deine Fitnessreise zu beginnen',
+    de: 'Registriere dich, um deine fitnessreise zu beginnen',
   },
   'alreadyHaveAccount': {
     en: 'Already have an account?',
@@ -175,11 +175,11 @@ const translations: Translations = {
   },
   'please.fill.all.fields': {
     en: 'Please fill all fields',
-    de: 'Bitte fülle alle Felder aus',
+    de: 'Bitte fülle alle felder aus',
   },
   'password.too.short': {
     en: 'Password must be at least 6 characters',
-    de: 'Passwort muss mindestens 6 Zeichen lang sein',
+    de: 'Passwort muss mindestens 6 zeichen lang sein',
   },
   'registration.successful': {
     en: 'Registration successful',
@@ -191,15 +191,15 @@ const translations: Translations = {
   },
   'please.enter.email': {
     en: 'Please enter your email',
-    de: 'Bitte gib deine E-Mail-Adresse ein',
+    de: 'Bitte gib deine e-mail-adresse ein',
   },
   'password.reset.email.sent': {
     en: 'Password reset email sent',
-    de: 'E-Mail zum Zurücksetzen des Passworts gesendet',
+    de: 'E-Mail zum zurücksetzen des passworts gesendet',
   },
   'password.reset.failed': {
     en: 'Password reset failed',
-    de: 'Fehler beim Zurücksetzen des Passworts',
+    de: 'Fehler beim zurücksetzen des passworts',
   },
   'email.placeholder': {
     en: 'your@email.com',
@@ -207,7 +207,7 @@ const translations: Translations = {
   },
   'username.placeholder': {
     en: 'Your username',
-    de: 'Dein Benutzername',
+    de: 'Dein benutzername',
   },
   
   // Profile
@@ -217,7 +217,7 @@ const translations: Translations = {
   },
   'enterWeight': {
     en: 'Enter your weight',
-    de: 'Gib dein Gewicht ein',
+    de: 'Gib dein gewicht ein',
   },
   'enterUsername': {
     en: 'Enter username',
@@ -237,15 +237,15 @@ const translations: Translations = {
   },
   'profileUpdatedDesc': {
     en: 'Your profile has been successfully updated',
-    de: 'Dein Profil wurde erfolgreich aktualisiert',
+    de: 'Dein profil wurde erfolgreich aktualisiert',
   },
   'errorUpdatingProfile': {
     en: 'Error updating profile',
-    de: 'Fehler beim Aktualisieren des Profils',
+    de: 'Fehler beim aktualisieren des profils',
   },
   'usernameMinLength': {
     en: 'Username must be at least 3 characters',
-    de: 'Benutzername muss mindestens 3 Zeichen lang sein',
+    de: 'Benutzername muss mindestens 3 zeichen lang sein',
   },
   
   // New email and account deletion
@@ -255,19 +255,19 @@ const translations: Translations = {
   },
   'newEmail': {
     en: 'New Email',
-    de: 'Neue E-Mail',
+    de: 'Neue e-mail',
   },
   'enterNewEmail': {
     en: 'Enter new email address',
-    de: 'Neue E-Mail-Adresse eingeben',
+    de: 'Neue e-mail-adresse eingeben',
   },
   'currentPassword': {
     en: 'Current Password',
-    de: 'Aktuelles Passwort',
+    de: 'Aktuelles passwort',
   },
   'enterCurrentPassword': {
     en: 'Enter your current password',
-    de: 'Gib dein aktuelles Passwort ein',
+    de: 'Gib dein aktuelles passwort ein',
   },
   'emailUpdateRequested': {
     en: 'Email Update Requested',
@@ -275,19 +275,19 @@ const translations: Translations = {
   },
   'checkInboxForConfirmation': {
     en: 'Please check your inbox for confirmation',
-    de: 'Bitte überprüfe dein Postfach für die Bestätigung',
+    de: 'Bitte überprüfe dein postfach für die bestätigung',
   },
   'errorUpdatingEmail': {
     en: 'Error updating email',
-    de: 'Fehler beim Aktualisieren der E-Mail',
+    de: 'Fehler beim aktualisieren der e-mail',
   },
   'invalidEmail': {
     en: 'Invalid email address',
-    de: 'Ungültige E-Mail-Adresse',
+    de: 'Ungültige e-mail-adresse',
   },
   'passwordMinLength': {
     en: 'Password must be at least 6 characters',
-    de: 'Passwort muss mindestens 6 Zeichen lang sein',
+    de: 'Passwort muss mindestens 6 zeichen lang sein',
   },
   'dangerZone': {
     en: 'Danger Zone',
@@ -299,7 +299,7 @@ const translations: Translations = {
   },
   'deleteAccountDescription': {
     en: 'Permanently delete your account and all of your data',
-    de: 'Lösche dein Konto und alle deine Daten dauerhaft',
+    de: 'Lösche dein konto und alle deine daten dauerhaft',
   },
   'permanentlyDeleteAccount': {
     en: 'Permanently Delete Account',
@@ -307,7 +307,7 @@ const translations: Translations = {
   },
   'deleteAccountWarning': {
     en: 'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.',
-    de: 'Diese Aktion kann nicht rückgängig gemacht werden. Dein Konto wird dauerhaft gelöscht und alle deine Daten werden von unseren Servern entfernt.',
+    de: 'Diese aktion kann nicht rückgängig gemacht werden. dein konto wird dauerhaft gelöscht und alle deine daten werden von unseren servern entfernt.',
   },
   'confirmDeletion': {
     en: 'Confirm Deletion',
@@ -315,7 +315,7 @@ const translations: Translations = {
   },
   'typeDeleteToConfirm': {
     en: 'Type DELETE to confirm',
-    de: 'Tippe DELETE zur Bestätigung',
+    de: 'Tippe DELETE zur bestätigung',
   },
   'passwordRequired': {
     en: 'Password is required',
@@ -323,7 +323,7 @@ const translations: Translations = {
   },
   'incorrectPassword': {
     en: 'Incorrect password',
-    de: 'Falsches Passwort',
+    de: 'Falsches passwort',
   },
   'accountDeleted': {
     en: 'Account Deleted',
@@ -331,11 +331,11 @@ const translations: Translations = {
   },
   'accountDeletedDescription': {
     en: 'Your account has been successfully deleted',
-    de: 'Dein Konto wurde erfolgreich gelöscht',
+    de: 'Dein konto wurde erfolgreich gelöscht',
   },
   'errorDeletingAccount': {
     en: 'Error deleting account',
-    de: 'Fehler beim Löschen des Kontos',
+    de: 'Fehler beim löschen des kontos',
   },
   
   // Metrics
@@ -361,7 +361,7 @@ const translations: Translations = {
   },
   'errorAddingMetric': {
     en: 'Error adding metric',
-    de: 'Fehler beim Hinzufügen der Kennzahl',
+    de: 'Fehler beim hinzufügen der kennzahl',
   },
   
   // Workouts
@@ -419,7 +419,7 @@ const translations: Translations = {
   },
   'errorAddingWorkout': {
     en: 'Error adding workout',
-    de: 'Fehler beim Hinzufügen des Trainings',
+    de: 'Fehler beim hinzufügen des trainings',
   },
   
   // Dashboard and Widget Keys
@@ -437,11 +437,11 @@ const translations: Translations = {
   },
   'exercise.mostFrequent': {
     en: 'Most Frequent Exercise',
-    de: 'Häufigste Übung',
+    de: 'Häufigste übung',
   },
   'metrics.currentWeight': {
     en: 'Current Weight',
-    de: 'Aktuelles Gewicht',
+    de: 'Aktuelles gewicht',
   },
   'metrics.weightGoal': {
     en: 'Weight Goal',
@@ -461,7 +461,7 @@ const translations: Translations = {
   },
   'widgets.none': {
     en: 'No widgets to display',
-    de: 'Keine Widgets zum Anzeigen',
+    de: 'Keine widgets zum anzeigen',
   },
   'workoutHistory': {
     en: 'Workout History',
