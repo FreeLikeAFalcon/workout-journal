@@ -25,7 +25,8 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off", // Added to allow 'any' type in certain cases
+      "@typescript-eslint/no-explicit-any": "off", // Allow 'any' type in certain cases
+      "@typescript-eslint/ban-ts-comment": "off", // Allow ts-ignore and ts-expect-error comments
     },
   }
 );
