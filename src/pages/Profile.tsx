@@ -1,12 +1,14 @@
+
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { User, PenSquare, Weight, Mail, UserCircle, AtSign } from "lucide-react";
+import { User, PenSquare, Weight, Mail, UserCircle, AtSign, Lock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import EditProfileDialog from "@/components/profile/EditProfileDialog";
 import ChangeEmailDialog from "@/components/profile/ChangeEmailDialog";
+import ChangePasswordDialog from "@/components/profile/ChangePasswordDialog";
 import DangerZoneCard from "@/components/profile/DangerZoneCard";
 import { useMetrics } from "@/contexts/MetricsContext";
 
@@ -16,6 +18,7 @@ const Profile: React.FC = () => {
   const { getLatestMetricValue } = useMetrics();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   
   const currentWeight = getLatestMetricValue("weight");
 
@@ -60,6 +63,21 @@ const Profile: React.FC = () => {
                 label={t('weight')} 
                 value={currentWeight ? `${currentWeight} kg` : t('notSet')} 
               />
+              
+              <ProfileField 
+                icon={<Lock />} 
+                label={t('password')} 
+                value="••••••••" 
+                action={
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsPasswordDialogOpen(true)}
+                  >
+                    <Lock className="size-4" />
+                  </Button>
+                }
+              />
             </div>
           </CardContent>
           
@@ -93,6 +111,13 @@ const Profile: React.FC = () => {
         <ChangeEmailDialog
           open={isEmailDialogOpen}
           onOpenChange={setIsEmailDialogOpen}
+        />
+      )}
+      
+      {isPasswordDialogOpen && (
+        <ChangePasswordDialog
+          open={isPasswordDialogOpen}
+          onOpenChange={setIsPasswordDialogOpen}
         />
       )}
     </Layout>
