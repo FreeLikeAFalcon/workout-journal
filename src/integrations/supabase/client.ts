@@ -30,7 +30,7 @@ export const setupWorkoutsRLS = async () => {
     // Check if the policies already exist
     // Using any for the return type since we're uncertain of the exact structure
     const { data: policies, error: policiesError } = await supabase
-      .rpc('get_policies', { table_name: 'workouts' } as GetPoliciesParams) as { data: any[], error: any };
+      .rpc('get_policies', { table_name: 'workouts' } as unknown as Record<string, unknown>);
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -43,7 +43,7 @@ export const setupWorkoutsRLS = async () => {
       
       // Enable RLS on the workouts table
       const { error: enableError } = await supabase
-        .rpc('enable_rls', { table_name: 'workouts' } as EnableRLSParams) as { data: any, error: any };
+        .rpc('enable_rls', { table_name: 'workouts' } as unknown as Record<string, unknown>);
       
       if (enableError) {
         console.error('Error enabling RLS:', enableError);
@@ -57,7 +57,7 @@ export const setupWorkoutsRLS = async () => {
           policy_name: 'Users can view their own workouts',
           operation: 'SELECT',
           using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams) as { data: any, error: any };
+        } as unknown as Record<string, unknown>);
       
       if (selectError) {
         console.error('Error creating SELECT policy:', selectError);
@@ -69,7 +69,7 @@ export const setupWorkoutsRLS = async () => {
           policy_name: 'Users can create their own workouts',
           operation: 'INSERT',
           with_check_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams) as { data: any, error: any };
+        } as unknown as Record<string, unknown>);
       
       if (insertError) {
         console.error('Error creating INSERT policy:', insertError);
@@ -81,7 +81,7 @@ export const setupWorkoutsRLS = async () => {
           policy_name: 'Users can update their own workouts',
           operation: 'UPDATE',
           using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams) as { data: any, error: any };
+        } as unknown as Record<string, unknown>);
       
       if (updateError) {
         console.error('Error creating UPDATE policy:', updateError);
@@ -93,7 +93,7 @@ export const setupWorkoutsRLS = async () => {
           policy_name: 'Users can delete their own workouts',
           operation: 'DELETE',
           using_expr: 'auth.uid() = user_id'
-        } as CreatePolicyParams) as { data: any, error: any };
+        } as unknown as Record<string, unknown>);
       
       if (deleteError) {
         console.error('Error creating DELETE policy:', deleteError);
