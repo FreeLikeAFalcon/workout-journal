@@ -46,6 +46,17 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
   // Fixed calculation of total volume
   const totalVolume = exercise.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
 
+  const handleRemoveSet = (setId: string) => {
+    // Don't allow removing the last set if it's the only one with data
+    if (exercise.sets.length === 1) {
+      return;
+    }
+    
+    if (onRemoveSet) {
+      onRemoveSet(exercise.id, setId);
+    }
+  };
+
   return (
     <div className="glass-card rounded-xl mb-4 overflow-hidden animate-slide-up">
       <div 
@@ -126,8 +137,9 @@ const ExerciseItem: React.FC<ExerciseItemProps> = ({
                       </td>
                       <td className="py-2 text-right">
                         <button
-                          onClick={() => onRemoveSet && onRemoveSet(exercise.id, set.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={() => handleRemoveSet(set.id)}
+                          className={`text-muted-foreground hover:text-destructive transition-colors ${exercise.sets.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={exercise.sets.length === 1}
                         >
                           <Trash size={14} />
                         </button>
