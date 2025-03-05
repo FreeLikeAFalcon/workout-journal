@@ -11,6 +11,7 @@ interface MetricsContextType {
   addMetric: (metric: { type: keyof BodyMetrics, value: number, date: string }) => Promise<void>;
   setGoal: (type: keyof BodyMetrics, goal: BodyGoal) => void;
   deleteMetric: (type: keyof BodyMetrics, id: string) => void;
+  deleteAllMetrics: (type: keyof BodyMetrics) => Promise<void>;
   updateWidgets: (widgets: WidgetConfig[]) => void;
   getLatestMetricValue: (type: keyof BodyMetrics) => number | undefined;
 }
@@ -363,6 +364,44 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const deleteAllMetrics = async (type: keyof BodyMetrics) => {
+    setMetrics(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        entries: []
+      }
+    }));
+    
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('body_metrics')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('metric_type', type);
+
+        if (error) {
+          console.error("Error deleting all metrics:", error);
+          fetchMetrics();
+          toast({
+            title: "Fehler",
+            description: `${type}-Werte konnten nicht gelöscht werden.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error in deleteAllMetrics:", error);
+      }
+    }
+    
+    toast({
+      title: "Werte gelöscht",
+      description: `Alle ${type}-Werte wurden gelöscht.`,
+    });
+  };
+
   const updateWidgets = async (newWidgets: WidgetConfig[]) => {
     setWidgets(newWidgets);
     
@@ -418,6 +457,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addMetric,
         setGoal,
         deleteMetric,
+        deleteAllMetrics,
         updateWidgets,
         getLatestMetricValue
       }}

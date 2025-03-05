@@ -1,19 +1,23 @@
-
 import React, { useState } from "react";
 import { BodyGoal } from "@/types/metrics";
 import { useMetrics } from "@/contexts/MetricsContext";
-import { Dumbbell, Plus, X, Target, Scale, Ruler } from "lucide-react";
+import { Dumbbell, Plus, X, Target, Scale, Ruler, Trash2, AlertTriangle, CalendarDays } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type MetricType = "weight" | "bodyFat" | "muscleMass";
 
 const MetricsForm: React.FC = () => {
-  const { metrics, addMetric, setGoal } = useMetrics();
+  const { metrics, addMetric, setGoal, deleteAllMetrics } = useMetrics();
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<MetricType>("weight");
   const [metricValue, setMetricValue] = useState<number | "">("");
+  const [metricDate, setMetricDate] = useState(new Date().toISOString().split("T")[0]);
   const [goalValue, setGoalValue] = useState<number | "">("");
   const [goalDeadline, setGoalDeadline] = useState("");
   const [isGoalMode, setIsGoalMode] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const calculateBodyFatKg = (weightKg: number, bodyFatPercentage: number) => {
     return (weightKg * bodyFatPercentage) / 100;
@@ -49,13 +53,13 @@ const MetricsForm: React.FC = () => {
     e.preventDefault();
     
     if (metricValue !== "" && !isGoalMode) {
-      // Fix the addMetric call to match the expected signature from MetricsContext
       addMetric({
         type: activeTab,
         value: Number(metricValue),
-        date: new Date().toISOString()
+        date: metricDate
       });
       setMetricValue("");
+      setMetricDate(new Date().toISOString().split("T")[0]);
       setIsFormVisible(false);
     } else if (goalValue !== "" && isGoalMode) {
       const newGoal: BodyGoal = {
@@ -70,11 +74,17 @@ const MetricsForm: React.FC = () => {
     }
   };
 
+  const handleDeleteAllMetrics = () => {
+    deleteAllMetrics(activeTab);
+    setIsDeleteDialogOpen(false);
+  };
+
   const toggleForm = () => {
     setIsFormVisible(!isFormVisible);
     setIsGoalMode(false);
     setMetricValue("");
     setGoalValue("");
+    setMetricDate(new Date().toISOString().split("T")[0]);
   };
 
   const getLatestValue = (type: MetricType) => {
@@ -92,14 +102,11 @@ const MetricsForm: React.FC = () => {
     const startValue = entries[0].value;
     const targetValue = goal.target;
     
-    // If we want to decrease (e.g., weight loss or body fat reduction)
     if (targetValue < startValue) {
       const totalChange = startValue - targetValue;
       const currentChange = startValue - latestValue;
       return Math.min(100, Math.max(0, (currentChange / totalChange) * 100));
-    } 
-    // If we want to increase (e.g., muscle mass gain)
-    else {
+    } else {
       const totalChange = targetValue - startValue;
       const currentChange = latestValue - startValue;
       return Math.min(100, Math.max(0, (currentChange / totalChange) * 100));
@@ -116,7 +123,7 @@ const MetricsForm: React.FC = () => {
         return <Dumbbell size={18} />;
     }
   };
-  
+
   const getUnit = (type: MetricType) => metrics[type].unit;
 
   return (
@@ -225,27 +232,57 @@ const MetricsForm: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {metrics[activeTab].entries.length > 0 && (
+              <div className="flex justify-end mb-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="flex items-center gap-1"
+                >
+                  <Trash2 size={14} />
+                  Alle {activeTab === "weight" ? "Gewichts" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"}werte löschen
+                </Button>
+              </div>
+            )}
           </div>
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               {!isGoalMode ? (
-                <div>
-                  <label className="block text-sm text-muted-foreground mb-1">
-                    {getTabIcon(activeTab)} Neuer {activeTab === "weight" ? "Gewichts" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"}wert
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={metricValue}
-                      onChange={(e) => setMetricValue(e.target.value === "" ? "" : parseFloat(e.target.value))}
-                      step="0.1"
-                      min="0"
-                      className="flex-1 p-2 border border-input rounded-lg bg-transparent"
-                      placeholder={`${activeTab === "weight" ? "Gewicht" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"} in ${getUnit(activeTab)}`}
-                      required
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-muted-foreground mb-1">
+                      {getTabIcon(activeTab)} Neuer {activeTab === "weight" ? "Gewichts" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"}wert
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={metricValue}
+                        onChange={(e) => setMetricValue(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                        step="0.1"
+                        min="0"
+                        className="flex-1 p-2 border border-input rounded-lg bg-transparent"
+                        placeholder={`${activeTab === "weight" ? "Gewicht" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"} in ${getUnit(activeTab)}`}
+                        required
+                      />
+                      <span className="text-muted-foreground">{getUnit(activeTab)}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-muted-foreground mb-1">
+                      <CalendarDays size={18} className="inline mr-2" />
+                      Datum
+                    </label>
+                    <Input
+                      type="date"
+                      value={metricDate}
+                      onChange={(e) => setMetricDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="w-full"
                     />
-                    <span className="text-muted-foreground">{getUnit(activeTab)}</span>
                   </div>
                 </div>
               ) : (
@@ -306,6 +343,28 @@ const MetricsForm: React.FC = () => {
           </form>
         </div>
       )}
+      
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive" size={18} />
+              Alle Werte löschen
+            </DialogTitle>
+            <DialogDescription>
+              Möchtest du wirklich alle {activeTab === "weight" ? "Gewichts" : activeTab === "bodyFat" ? "Körperfett" : "Muskelmasse"}werte löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAllMetrics}>
+              Ja, alle Werte löschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
