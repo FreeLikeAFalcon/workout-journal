@@ -7,12 +7,15 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Type for RPC parameters to solve TypeScript errors
+type RPCParams = Record<string, any>;
+
 // Add RLS policies to the workouts table
 export const setupWorkoutsRLS = async () => {
   try {
     // Check if the policies already exist
     const { data: policies, error: policiesError } = await supabase
-      .rpc('get_policies', { table_name: 'workouts' } as any);
+      .rpc('get_policies', { table_name: 'workouts' } as RPCParams);
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -24,7 +27,7 @@ export const setupWorkoutsRLS = async () => {
       console.log('No RLS policies found for workouts table, creating them...');
       
       // Enable RLS on the workouts table
-      await supabase.rpc('enable_rls', { table_name: 'workouts' } as any);
+      await supabase.rpc('enable_rls', { table_name: 'workouts' } as RPCParams);
       
       // Create policies for CRUD operations
       await supabase.rpc('create_policy', { 
@@ -32,28 +35,28 @@ export const setupWorkoutsRLS = async () => {
         policy_name: 'Users can view their own workouts',
         operation: 'SELECT',
         using_expr: 'auth.uid() = user_id'
-      } as any);
+      } as RPCParams);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can create their own workouts',
         operation: 'INSERT',
         with_check_expr: 'auth.uid() = user_id'
-      } as any);
+      } as RPCParams);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can update their own workouts',
         operation: 'UPDATE',
         using_expr: 'auth.uid() = user_id'
-      } as any);
+      } as RPCParams);
       
       await supabase.rpc('create_policy', { 
         table_name: 'workouts',
         policy_name: 'Users can delete their own workouts',
         operation: 'DELETE',
         using_expr: 'auth.uid() = user_id'
-      } as any);
+      } as RPCParams);
       
       console.log('RLS policies created successfully for workouts table');
     }
