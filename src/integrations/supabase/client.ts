@@ -28,10 +28,8 @@ interface CreatePolicyParams {
 export const setupWorkoutsRLS = async () => {
   try {
     // Check if the policies already exist
-    // Using any for the return type since we're uncertain of the exact structure
-    // @ts-ignore - Ignoring type issues with RPC calls
     const { data: policies, error: policiesError } = await supabase
-      .rpc('get_policies', { table_name: 'workouts' });
+      .rpc<any[]>('get_policies', { table_name: 'workouts' } as GetPoliciesParams);
     
     if (policiesError) {
       console.error('Error checking policies:', policiesError);
@@ -43,9 +41,8 @@ export const setupWorkoutsRLS = async () => {
       console.log('No RLS policies found for workouts table, creating them...');
       
       // Enable RLS on the workouts table
-      // @ts-ignore - Ignoring type issues with RPC calls
       const { error: enableError } = await supabase
-        .rpc('enable_rls', { table_name: 'workouts' });
+        .rpc('enable_rls', { table_name: 'workouts' } as EnableRLSParams);
       
       if (enableError) {
         console.error('Error enabling RLS:', enableError);
@@ -53,53 +50,49 @@ export const setupWorkoutsRLS = async () => {
       }
       
       // Create policies for CRUD operations
-      // @ts-ignore - Ignoring type issues with RPC calls
       const { error: selectError } = await supabase
         .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can view their own workouts',
           operation: 'SELECT',
           using_expr: 'auth.uid() = user_id'
-        });
+        } as CreatePolicyParams);
       
       if (selectError) {
         console.error('Error creating SELECT policy:', selectError);
       }
       
-      // @ts-ignore - Ignoring type issues with RPC calls
       const { error: insertError } = await supabase
         .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can create their own workouts',
           operation: 'INSERT',
           with_check_expr: 'auth.uid() = user_id'
-        });
+        } as CreatePolicyParams);
       
       if (insertError) {
         console.error('Error creating INSERT policy:', insertError);
       }
       
-      // @ts-ignore - Ignoring type issues with RPC calls
       const { error: updateError } = await supabase
         .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can update their own workouts',
           operation: 'UPDATE',
           using_expr: 'auth.uid() = user_id'
-        });
+        } as CreatePolicyParams);
       
       if (updateError) {
         console.error('Error creating UPDATE policy:', updateError);
       }
       
-      // @ts-ignore - Ignoring type issues with RPC calls
       const { error: deleteError } = await supabase
         .rpc('create_policy', { 
           table_name: 'workouts',
           policy_name: 'Users can delete their own workouts',
           operation: 'DELETE',
           using_expr: 'auth.uid() = user_id'
-        });
+        } as CreatePolicyParams);
       
       if (deleteError) {
         console.error('Error creating DELETE policy:', deleteError);
