@@ -72,8 +72,8 @@ const Navbar: React.FC = () => {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border">
-              <DropdownMenuLabel className="text-foreground">{t('myAccount')}</DropdownMenuLabel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/dashboard")}>
                 <LayoutDashboard className="mr-2 h-4 w-4" />
