@@ -33,7 +33,7 @@ const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({ open, onOpenC
     try {
       // Call the Supabase function to delete user data
       const { error: rpcError } = await supabase.rpc('delete_user_data', {
-        password: password
+        user_password: password // Changed parameter name to match the expected function parameter
       });
 
       if (rpcError) {

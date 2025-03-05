@@ -6,6 +6,7 @@ import { Dumbbell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Impressum from "@/components/layout/Impressum";
 
 const Welcome: React.FC = () => {
   const { user } = useAuth();
@@ -69,7 +70,12 @@ const Welcome: React.FC = () => {
       </div>
 
       <footer className="absolute bottom-6 text-white/60 text-sm">
-        © {new Date().getFullYear()} Wod-Tracker • {t('journey')}
+        <div className="flex flex-col items-center">
+          <p>© {new Date().getFullYear()} Wod-Tracker • {t('journey')}</p>
+          <div className="mt-1">
+            <Impressum />
+          </div>
+        </div>
       </footer>
     </div>
   );

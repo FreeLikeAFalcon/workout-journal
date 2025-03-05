@@ -2,6 +2,7 @@
 import React from "react";
 import Navbar from "./Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Impressum from "./Impressum";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,7 +17,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Navbar />
         <main className="pb-12">{children}</main>
         <footer className="text-center text-sm text-muted-foreground mt-16 pb-8">
-          <p>© {new Date().getFullYear()} WOD-Tracker • {t('journey')}</p>
+          <p className="mb-2">© {new Date().getFullYear()} WOD-Tracker • {t('journey')}</p>
+          <div className="flex justify-center">
+            <Impressum />
+          </div>
         </footer>
       </div>
     </div>
