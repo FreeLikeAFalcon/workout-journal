@@ -1,4 +1,3 @@
-
 import { ChartData, Exercise, Set, Workout, WorkoutStats } from "@/types/workout";
 
 /**
@@ -75,7 +74,7 @@ export const calculateWorkoutStats = (workouts: Workout[]): WorkoutStats => {
       totalExercises: 0,
       totalSets: 0,
       mostFrequentExercise: {
-        name: 'Keine',
+        name: '',
         count: 0
       }
     };
@@ -100,7 +99,7 @@ export const calculateWorkoutStats = (workouts: Workout[]): WorkoutStats => {
     });
   });
 
-  let mostFrequentExercise = { name: 'Keine', count: 0 };
+  let mostFrequentExercise = { name: '', count: 0 };
   
   Object.entries(exerciseCounts).forEach(([name, count]) => {
     if (count > mostFrequentExercise.count) {

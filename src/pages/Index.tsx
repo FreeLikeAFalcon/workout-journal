@@ -110,7 +110,15 @@ const Index: React.FC = () => {
         <MetricsForm />
         
         {/* Progress Chart */}
-        <ProgressChart chartData={chartData} />
+        {workouts.length > 0 ? (
+          <ProgressChart chartData={chartData} />
+        ) : (
+          <div className="glass-card rounded-xl p-8 text-center">
+            <Activity size={40} className="mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">{t('charts.noWorkouts')}</h3>
+            <p className="text-muted-foreground">{t('charts.addWorkoutsToSeeProgress')}</p>
+          </div>
+        )}
         
         {/* Add New Workout Form */}
         <WorkoutForm />

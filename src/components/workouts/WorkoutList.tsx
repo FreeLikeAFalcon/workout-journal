@@ -1,10 +1,10 @@
-
 import React, { useState, useMemo } from "react";
 import { Workout } from "@/types/workout";
 import { calculateWorkoutVolume, formatDate, findPreviousExercise, isPersonalRecord, lbsToKg } from "@/utils/workoutUtils";
 import { useWorkout } from "@/contexts/WorkoutContext";
 import { Calendar, ChevronDown, ChevronUp, Dumbbell, Trash, Filter, FolderOpen, FolderClosed } from "lucide-react";
 import ExerciseItem from "./ExerciseItem";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const WorkoutList: React.FC = () => {
   const { workouts, deleteWorkout } = useWorkout();
@@ -17,6 +17,7 @@ const WorkoutList: React.FC = () => {
     endDate: "",
   });
   const [groupBy, setGroupBy] = useState<"date" | "program">("date");
+  const { t } = useLanguage();
 
   // Extract all unique programs and phases for filter dropdowns
   const { programs, phases } = useMemo(() => {
@@ -112,9 +113,9 @@ const WorkoutList: React.FC = () => {
     return (
       <div className="glass-card rounded-xl p-8 text-center animate-fade-in">
         <Dumbbell size={40} className="mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">Noch keine Workouts</h3>
+        <h3 className="text-lg font-medium mb-2">{t('workouts.none')}</h3>
         <p className="text-muted-foreground">
-          Beginne mit dem Tracking deiner Workouts, um deinen Fortschritt zu verfolgen.
+          {t('workouts.startTracking')}
         </p>
       </div>
     );
@@ -126,18 +127,18 @@ const WorkoutList: React.FC = () => {
       <div className="glass-card rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Filter size={18} />
-          <h3 className="font-medium">Filter</h3>
+          <h3 className="font-medium">{t('filter')}</h3>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-sm text-muted-foreground mb-1">Programm</label>
+            <label className="block text-sm text-muted-foreground mb-1">{t('program')}</label>
             <select
               value={filters.program}
               onChange={(e) => setFilters({ ...filters, program: e.target.value })}
               className="w-full p-2 border border-input rounded-lg bg-transparent"
             >
-              <option value="">Alle Programme</option>
+              <option value="">{t('allPrograms')}</option>
               {programs.map(program => (
                 <option key={program} value={program}>{program}</option>
               ))}
@@ -145,13 +146,13 @@ const WorkoutList: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-sm text-muted-foreground mb-1">Phase</label>
+            <label className="block text-sm text-muted-foreground mb-1">{t('phase')}</label>
             <select
               value={filters.phase}
               onChange={(e) => setFilters({ ...filters, phase: e.target.value })}
               className="w-full p-2 border border-input rounded-lg bg-transparent"
             >
-              <option value="">Alle Phasen</option>
+              <option value="">{t('allPhases')}</option>
               {phases.map(phase => (
                 <option key={phase} value={phase}>{phase}</option>
               ))}
@@ -159,7 +160,7 @@ const WorkoutList: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-sm text-muted-foreground mb-1">Von Datum</label>
+            <label className="block text-sm text-muted-foreground mb-1">{t('fromDate')}</label>
             <input
               type="date"
               value={filters.startDate}
@@ -169,7 +170,7 @@ const WorkoutList: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-sm text-muted-foreground mb-1">Bis Datum</label>
+            <label className="block text-sm text-muted-foreground mb-1">{t('toDate')}</label>
             <input
               type="date"
               value={filters.endDate}
@@ -181,14 +182,14 @@ const WorkoutList: React.FC = () => {
         
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Gruppieren nach:</label>
+            <label className="text-sm text-muted-foreground">{t('groupBy')}:</label>
             <select
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as "date" | "program")}
               className="p-1 border border-input rounded-lg bg-transparent"
             >
-              <option value="date">Datum</option>
-              <option value="program">Programm</option>
+              <option value="date">{t('date')}</option>
+              <option value="program">{t('program')}</option>
             </select>
           </div>
           
@@ -196,13 +197,24 @@ const WorkoutList: React.FC = () => {
             onClick={resetFilters}
             className="text-sm text-accent hover:text-accent/80 transition-colors"
           >
-            Filter zurücksetzen
+            {t('resetFilters')}
           </button>
         </div>
       </div>
       
+      {/* No filtered workouts message */}
+      {filteredWorkouts.length === 0 && (
+        <div className="glass-card rounded-xl p-8 text-center animate-fade-in">
+          <Filter size={40} className="mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-medium mb-2">{t('workouts.noMatchingWorkouts')}</h3>
+          <p className="text-muted-foreground">
+            {t('workouts.tryDifferentFilters')}
+          </p>
+        </div>
+      )}
+      
       {/* Workouts grouped by date */}
-      {groupBy === "date" && Object.entries(workoutsByMonth).map(([monthYear, monthWorkouts]) => (
+      {filteredWorkouts.length > 0 && groupBy === "date" && Object.entries(workoutsByMonth).map(([monthYear, monthWorkouts]) => (
         <div key={monthYear}>
           <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Calendar size={18} className="text-muted-foreground" />
@@ -273,7 +285,7 @@ const WorkoutList: React.FC = () => {
       ))}
       
       {/* Workouts grouped by program */}
-      {groupBy === "program" && Object.entries(workoutsByProgram).map(([programName, programWorkouts]) => (
+      {filteredWorkouts.length > 0 && groupBy === "program" && Object.entries(workoutsByProgram).map(([programName, programWorkouts]) => (
         <div key={programName} className="glass-card rounded-xl overflow-hidden mb-4">
           <div
             className="p-4 flex justify-between items-center cursor-pointer bg-secondary/30"
