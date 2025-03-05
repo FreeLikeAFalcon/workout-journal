@@ -37,14 +37,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setWorkouts(parsedWorkouts);
           } else {
             console.error("Invalid workouts data in localStorage");
-            setWorkouts(createSampleWorkouts());
+            setWorkouts([]);
           }
         } else {
-          setWorkouts(createSampleWorkouts());
+          setWorkouts([]);
         }
       } catch (error) {
         console.error("Failed to parse workouts from localStorage:", error);
-        setWorkouts(createSampleWorkouts());
+        setWorkouts([]);
       } finally {
         setIsLoading(false);
       }
@@ -87,16 +87,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const fetchedWorkouts = workoutsData || [];
       
       if (fetchedWorkouts.length === 0) {
-        console.log("No workouts found, creating sample workouts");
-        if (user) {
-          const sampleWorkouts = createSampleWorkouts().map(workout => ({
-            ...workout,
-            user_id: user.id
-          }));
-          await saveWorkoutsToDatabase(sampleWorkouts);
-          setIsLoading(false);
-          return; // saveWorkoutsToDatabase will call fetchWorkouts again
-        }
+        console.log("No workouts found for user");
+        setWorkouts([]);
+        setIsLoading(false);
+        return;
       }
 
       const fullWorkouts: Workout[] = [];

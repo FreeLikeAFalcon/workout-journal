@@ -33,7 +33,7 @@ export const setupWorkoutsRLS = async () => {
     for (const table of tables) {
       // Check if the policies already exist for this table
       const { data: policies, error: policiesError } = await supabase
-        .rpc('get_policies', { table_name: table } as GetPoliciesParams);
+        .rpc<any[]>('get_policies', { table_name: table });
       
       if (policiesError) {
         console.error(`Error checking policies for ${table}:`, policiesError);

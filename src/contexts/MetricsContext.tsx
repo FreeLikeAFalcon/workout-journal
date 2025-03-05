@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { BodyMetric, BodyGoal, BodyMetrics, WidgetConfig, WidgetType } from "@/types/metrics";
 import { generateId } from "@/utils/workoutUtils";
@@ -17,10 +18,10 @@ interface MetricsContextType {
 }
 
 const defaultWidgets: WidgetConfig[] = [
-  { id: generateId(), type: WidgetType.TOTAL_WORKOUTS, position: 0, visible: true },
-  { id: generateId(), type: WidgetType.TOTAL_EXERCISES, position: 1, visible: true },
-  { id: generateId(), type: WidgetType.TOTAL_SETS, position: 2, visible: true },
-  { id: generateId(), type: WidgetType.MOST_FREQUENT_EXERCISE, position: 3, visible: true },
+  { id: generateId(), type: WidgetType.TOTAL_WORKOUTS, position: 0, visible: false },
+  { id: generateId(), type: WidgetType.TOTAL_EXERCISES, position: 1, visible: false },
+  { id: generateId(), type: WidgetType.TOTAL_SETS, position: 2, visible: false },
+  { id: generateId(), type: WidgetType.MOST_FREQUENT_EXERCISE, position: 3, visible: false },
   { id: generateId(), type: WidgetType.CURRENT_WEIGHT, position: 4, visible: false },
   { id: generateId(), type: WidgetType.WEIGHT_GOAL, position: 5, visible: false },
   { id: generateId(), type: WidgetType.BODY_FAT, position: 6, visible: false },
@@ -46,7 +47,7 @@ const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
 export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [metrics, setMetrics] = useState<BodyMetrics>(defaultMetrics);
-  const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgets);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>([...defaultWidgets]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -73,6 +74,9 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           console.error("Failed to parse widgets from localStorage:", error);
           setWidgets(defaultWidgets);
         }
+      } else {
+        // For new users without saved widgets, set all to invisible
+        setWidgets(defaultWidgets);
       }
     }
   }, [user]);
@@ -159,22 +163,24 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
         setWidgets(widgetConfigs);
       } else {
-        saveDefaultWidgetsToDatabase();
+        // For new users, all widgets should be invisible
+        saveDefaultWidgetsToDatabase(false);
       }
     } catch (error) {
       console.error("Error in fetchWidgets:", error);
     }
   };
 
-  const saveDefaultWidgetsToDatabase = async () => {
+  const saveDefaultWidgetsToDatabase = async (visible = false) => {
     if (!user) return;
 
     try {
+      // For new users, make all widgets invisible by default
       const widgetsToInsert = defaultWidgets.map(widget => ({
         user_id: user.id,
         type: widget.type,
         position: widget.position,
-        visible: widget.visible,
+        visible: visible, // Set all to invisible for new users
       }));
 
       const { error } = await supabase
