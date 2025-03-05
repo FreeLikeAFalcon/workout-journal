@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Exercise, Set, Workout } from "@/types/workout";
 import { createSampleWorkouts, generateId } from "@/utils/workoutUtils";
@@ -51,6 +50,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchWorkouts = async () => {
     try {
+      console.log("Fetching workouts for user:", user?.id);
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
@@ -62,7 +62,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
+      console.log("Fetched workouts:", workoutsData);
+      
       if (!workoutsData || workoutsData.length === 0) {
+        console.log("No workouts found, creating sample workouts");
         if (user) {
           const sampleWorkouts = createSampleWorkouts().map(workout => ({
             ...workout,
@@ -125,6 +128,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
       }));
 
+      console.log("Setting full workouts:", fullWorkouts);
       setWorkouts(fullWorkouts);
     } catch (error) {
       console.error("Error in fetchWorkouts:", error);
@@ -270,10 +274,45 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteWorkout = async (id: string) => {
+    console.log("Deleting workout with ID:", id);
+    // Update UI immediately
     setWorkouts((prev) => prev.filter((workout) => workout.id !== id));
 
     if (user) {
       try {
+        // First, delete all sets related to exercises in this workout
+        const { data: exercisesData, error: exercisesError } = await supabase
+          .from('exercises')
+          .select('id')
+          .eq('workout_id', id);
+
+        if (exercisesError) {
+          console.error("Error fetching exercises for deletion:", exercisesError);
+        } else if (exercisesData && exercisesData.length > 0) {
+          const exerciseIds = exercisesData.map(e => e.id);
+          
+          // Delete all sets for these exercises
+          const { error: setsError } = await supabase
+            .from('sets')
+            .delete()
+            .in('exercise_id', exerciseIds);
+
+          if (setsError) {
+            console.error("Error deleting sets:", setsError);
+          }
+          
+          // Delete the exercises
+          const { error: exError } = await supabase
+            .from('exercises')
+            .delete()
+            .in('id', exerciseIds);
+
+          if (exError) {
+            console.error("Error deleting exercises:", exError);
+          }
+        }
+
+        // Finally, delete the workout
         const { error } = await supabase
           .from('workouts')
           .delete()
@@ -281,6 +320,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (error) {
           console.error("Error deleting workout:", error);
+          // Revert UI if there was an error
           fetchWorkouts();
           toast({
             title: "Error",
@@ -289,9 +329,22 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           });
           return;
         }
+        
+        console.log("Workout successfully deleted");
       } catch (error) {
         console.error("Error in deleteWorkout:", error);
+        // Revert UI if there was an error
+        fetchWorkouts();
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while deleting workout.",
+          variant: "destructive",
+        });
+        return;
       }
+    } else {
+      // For non-authenticated users, just update localStorage
+      localStorage.setItem("workouts", JSON.stringify(workouts.filter(w => w.id !== id)));
     }
 
     toast({
@@ -333,28 +386,84 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const clearAllWorkouts = async () => {
+    console.log("Clearing all workouts");
     setWorkouts([]);
 
     if (user) {
       try {
-        const { error } = await supabase
+        // Get all workouts for this user
+        const { data: workoutsData, error: workoutsError } = await supabase
           .from('workouts')
-          .delete()
+          .select('id')
           .eq('user_id', user.id);
 
-        if (error) {
-          console.error("Error clearing workouts:", error);
-          fetchWorkouts();
-          toast({
-            title: "Error",
-            description: "Failed to clear workouts.",
-            variant: "destructive",
-          });
-          return;
+        if (workoutsError) {
+          console.error("Error fetching workouts for deletion:", workoutsError);
+        } else if (workoutsData && workoutsData.length > 0) {
+          // Get all exercises for these workouts
+          const workoutIds = workoutsData.map(w => w.id);
+          const { data: exercisesData, error: exercisesError } = await supabase
+            .from('exercises')
+            .select('id')
+            .in('workout_id', workoutIds);
+
+          if (exercisesError) {
+            console.error("Error fetching exercises for deletion:", exercisesError);
+          } else if (exercisesData && exercisesData.length > 0) {
+            // Delete all sets for these exercises
+            const exerciseIds = exercisesData.map(e => e.id);
+            const { error: setsError } = await supabase
+              .from('sets')
+              .delete()
+              .in('exercise_id', exerciseIds);
+
+            if (setsError) {
+              console.error("Error deleting sets:", setsError);
+            }
+            
+            // Delete the exercises
+            const { error: exError } = await supabase
+              .from('exercises')
+              .delete()
+              .in('id', exerciseIds);
+
+            if (exError) {
+              console.error("Error deleting exercises:", exError);
+            }
+          }
+          
+          // Delete all workouts
+          const { error: workoutsDeleteError } = await supabase
+            .from('workouts')
+            .delete()
+            .in('id', workoutIds);
+
+          if (workoutsDeleteError) {
+            console.error("Error deleting workouts:", workoutsDeleteError);
+            fetchWorkouts();
+            toast({
+              title: "Error",
+              description: "Failed to clear workouts.",
+              variant: "destructive",
+            });
+            return;
+          }
         }
+        
+        console.log("All workouts successfully deleted");
       } catch (error) {
         console.error("Error in clearAllWorkouts:", error);
+        fetchWorkouts();
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while clearing workouts.",
+          variant: "destructive",
+        });
+        return;
       }
+    } else {
+      // For non-authenticated users, just clear localStorage
+      localStorage.removeItem("workouts");
     }
 
     toast({
